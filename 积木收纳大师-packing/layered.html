@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>积木收纳大师 · 玩法试验</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<main class="app">
+  <header><div><span class="eyebrow">玩法试验 / 01</span><h1>积木收纳大师<span class="title-dot">.</span></h1></div>
+    <div class="controls"><label class="sr-only" for="level">选择关卡</label><select id="level"></select><button id="restart">重玩本关</button></div></header>
+  <div class="intro"><p id="note"></p><span>方向固定 ↑ · 填满就收走 · 3 个暂存位</span></div>
+  <div class="layout">
+    <section class="panel workbench"><div class="section-head"><h2>装进木框</h2><span id="progress"></span></div>
+      <div id="queue" aria-label="本关全部木框"></div>
+      <div class="board-wrap"><canvas id="board" tabindex="0" aria-label="当前木框。选中积木后，点击格子放置；也可用方向键移动落点，回车放置。"></canvas>
+        <div id="celebrate" class="celebrate" hidden></div></div>
+      <p class="board-help">点选积木，再点木框放置；也可以直接拖入。<br>点击格子对应积木的左上角，框内积木可调整。</p>
+      <div class="storage"><div class="section-head tray-heading"><h2>暂存区</h2><span id="trayCount"></span></div>
+      <div id="tray" class="tray" aria-label="三个暂存位"></div>
+      <p class="subtle">暂时用不上的块先放这里。取出后不放回料堆。</p></div>
+    </section>
+    <section class="panel supply"><div class="section-head"><h2>拿取积木</h2><span id="remaining"></span></div>
+      <p class="subtle pile-help">有积木压着就不能拿；拿走上层，下层立即可取。</p>
+      <canvas id="pile" aria-label="两层积木料堆"></canvas>
+      <div class="section-head map-heading"><h2>下层完整预览</h2><span>常驻可见，无需透视</span></div>
+      <div id="underlay" class="underlay"></div>
+      <details><summary>操作说明</summary><p>点积木选中，再点木框或空暂存位。已入框的积木也能移动，或放回空暂存位。积木不能旋转；没有撤销。放不下时可以调整布局，或重玩本关。</p></details>
+    </section>
+  </div>
+  <div id="status" role="status" aria-live="polite">选择一块积木开始。</div>
+  <div id="win" class="win" hidden><div><span class="eyebrow">全部收纳完成</span><h2>这一堆，收好了。</h2><p id="winText"></p><button id="next" class="primary">下一关 →</button><button id="again">再玩一次</button></div></div>
+  <footer>有限积木 · 有限木框 · 简单色块验证玩法 <a href="../index.html">旧版贴纸原型 ↗</a></footer>
+</main><script src="core.js"></script><script src="app.js"></script>
+</body></html>

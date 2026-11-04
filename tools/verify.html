@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Pixel Stash · 验证工具（M1+M2）</title>
+  <style>
+    body { font-family: Consolas, "Microsoft YaHei", monospace; background: #1e1b26; color: #e8e2f0; padding: 18px; }
+    h1 { font-size: 18px; color: #ffd6e3; }
+    pre { background: #2a2635; padding: 14px; border-radius: 8px; font-size: 12.5px; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: #7be495; } .fail { color: #ff7d9c; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Pixel Stash · 验证工具（数据校验 / 单元测试 / 关卡求解 / 提示系统）</h1>
+  <pre id="out">运行中…</pre>
+
+  <script src="../js/data/shapes.js"></script>
+  <script src="../js/data/catalog.js"></script>
+  <script src="../js/data/levels.js"></script>
+  <script src="../js/core/geometry.js"></script>
+  <script src="../js/core/validator.js"></script>
+  <script src="../js/core/solver.js"></script>
+  <script src="../js/core/game.js"></script>
+  <script src="../js/core/hints.js"></script>
+  <script src="../js/ui/art.js"></script>
+
+  <script>
+  (function () {
+    var checks = [];
+    var failures = 0;
+    function check(name, fn) {
+      try {
+        var r = fn();
+        checks.push({ name: name, ok: !!r, detail: r === true ? "" : String(r) });
+        if (!r) failures++;
+      } catch (e) {
+        checks.push({ name: name, ok: false, detail: "异常: " + (e && e.message) });
+        failures++;
+      }
+    }
+
+    function assert(cond, msg) { if (!cond) throw new Error(msg || "断言失败"); return true; }
+
+    // ---------- 1. 数据完整性 ----------
+    Object.keys(SHAPES).forEach(function (sid) {
+      check("形状[" + sid + "] 格子非空且连通", function () {
+        var cells = SHAPES[sid].cells;
+        assert(cells.length > 0, "空形状");
+        var key = Geometry.cellsKey(cells);
+        assert(Geometry.normalize(cells).length === cells.length, "存在重复格子");
+        // 连通性（4 邻接）
+        var set = new Set(cells.map(function (c) { return c[0] + "," + c[1]; }));
+        var stack = [cells[0]], seen = new Set([cells[0][0] + "," + cells[0][1]]);
+        while (stack.length) {
+          var c = stack.pop();
+          [[1,0],[-1,0],[0,1],[0,-1]].forEach(function (d) {
+            var k = (c[0]+d[0]) + "," + (c[1]+d[1]);
+            if (set.has(k) && !seen.has(k)) { seen.add(k); stack.push([c[0]+d[0], c[1]+d[1]]); }
+          });
+        }
+        assert(seen.size === cells.length, "形状不连通");
+        return true;
+      });
+    });
+
+    Object.keys(STICKERS).forEach(function (tid) {
+      var st = STICKERS[tid];
+      check("贴纸[" + tid + "] 引用有效", function () {
+        assert(SHAPES[st.shapeId], "shapeId 不存在: " + st.shapeId);
+        assert(PIXEL_ART[st.art], "art 不存在: " + st.art);
+        return true;
+      });
+      check("美术[" + st.art + "] 尺寸 = 形状包围盒 × 8", function () {
+        var rows = PIXEL_ART[st.art];
+        var w = rows[0].length;
+        for (var i = 1; i < rows.length; i++) {
+          assert(rows[i].length === w, "第 " + i + " 行宽度 " + rows[i].length + " ≠ " + w);
+        }
+        var bb = Geometry.boundingBox(SHAPES[st.shapeId].cells);
+        assert(w === bb.w * 8 && rows.length === bb.h * 8,
+          "美术 " + w + "×" + rows.length + " ≠ 形状 " + (bb.w * 8) + "×" + (bb.h * 8));
+        rows.forEach(function (row, y) {
+          for (var x = 0; x < row.length; x++) {
+            assert(row[x] in PALETTE, "未知色板字符 '" + row[x] + "' @(" + x + "," + y + ")");
+          }
+        });
+        return true;
+      });
+      check("精灵[" + st.art + "] 各方向尺寸 = 旋转后形状包围盒（渲染旋转正确性）", function () {
+        [0, 90, 180, 270].forEach(function (rot) {
+          var sprite = Art.getSprite(st.art, rot);
+          assert(sprite, "精灵生成失败: " + st.art + " @" + rot);
+          var bb = Geometry.boundingBox(
+            Geometry.cellsAtRotation(SHAPES[st.shapeId].cells, rot)
+          );
+          var k = ART_PX_PER_CELL * SPRITE_PX;
+          assert(
+            sprite.width === bb.w * k && sprite.height === bb.h * k,
+            "精灵@" + rot + " 为 " + sprite.width + "×" + sprite.height +
+              "，旋转后应为 " + bb.w * k + "×" + bb.h * k + "（贴图未随逻辑旋转）"
+          );
+        });
+        return true;
+      });
+      // 永久门禁：美术像素与逻辑占格必须全方向一致（用户指令：新素材一律严格检查错位）。
+      // 按 Art.rowsFor(artKey, rot)（getSprite 的真实绘制源）逐方向比对，
+      // 而非只测 0° 底图 —— 防止"贴图未随逻辑旋转"一类渲染层 bug 逃逸（见补丁三）。
+      check("美术[" + st.art + "] 像素与形状占位格全方向对齐（0/90/180/270）", function () {
+        [0, 90, 180, 270].forEach(function (rot) {
+          var rows = Art.rowsFor(st.art, rot); // getSprite 的真实绘制源
+          var cells = Geometry.cellsAtRotation(SHAPES[st.shapeId].cells, rot);
+          var inShape = {};
+          cells.forEach(function (c) { inShape[c[0] + "," + c[1]] = true; });
+          for (var y = 0; y < rows.length; y++) {
+            for (var x = 0; x < rows[y].length; x++) {
+              if (rows[y][x] !== ".") {
+                var cx = Math.floor(x / 8), cy = Math.floor(y / 8);
+                assert(inShape[cx + "," + cy],
+                  "@" + rot + "° 像素画出占位格外: (" + x + "," + y + ") 落在格(" + cx + "," + cy + ")，形状不含此格");
+              }
+            }
+          }
+          cells.forEach(function (c) {
+            var has = false;
+            for (var y = c[1] * 8; y < c[1] * 8 + 8; y++)
+              for (var x = c[0] * 8; x < c[0] * 8 + 8; x++)
+                if (rows[y] && rows[y][x] !== ".") has = true;
+            assert(has, "@" + rot + "° 占位格(" + c[0] + "," + c[1] + ")内没有任何像素，视觉与判定错位");
+          });
+        });
+        return true;
+      });
+    });
+
+    LEVELS.forEach(function (lv) {
+      check("关卡 " + lv.levelId + " 实例与引用", function () {
+        var ids = new Set();
+        lv.pieces.forEach(function (p) {
+          assert(!ids.has(p.id), "实例 id 重复: " + p.id);
+          ids.add(p.id);
+          assert(STICKERS[p.stickerId], "贴纸引用无效: " + p.stickerId);
+          assert([0, 90, 180, 270].indexOf(p.initialRotation) !== -1, "非法初始方向");
+        });
+        assert(lv.rotationTokens >= 0 && lv.rotationTokens <= 3, "旋转名额超出 0-3");
+        assert(lv.board.width >= 4 && lv.board.height >= 4, "画布过小");
+        return true;
+      });
+    });
+
+    // ---------- 2. 单元测试 ----------
+    check("留白规则：正交相邻非法 / 斜角合法 / 同贴纸内部相邻合法", function () {
+      var board = { width: 4, height: 4, blockedCells: [] };
+      var grid = Validator.buildGrid(board);
+      // 放一个 2×2（模拟 0 号贴纸）
+      grid[0][0] = 0; grid[0][1] = 0; grid[1][0] = 0; grid[1][1] = 0;
+      assert(!Validator.checkCells(board, grid, [[2, 0]], 1).ok, "正交相邻应非法");
+      assert(!Validator.checkCells(board, grid, [[0, 2]], 1).ok, "正交相邻应非法(下)");
+      assert(Validator.checkCells(board, grid, [[2, 2]], 1).ok, "斜角应合法");
+      assert(!Validator.checkCells(board, grid, [[1, 1]], 1).ok, "重叠应非法");
+      assert(Validator.checkCells(board, grid, [[0, 0]], 0).ok, "忽略自身占位应合法");
+      return true;
+    });
+
+    check("非法反馈细节：返回出问题格子与挡路贴纸下标（供红色高亮/文案点名）", function () {
+      var board = { width: 4, height: 4, blockedCells: [] };
+      var grid = Validator.buildGrid(board);
+      grid[0][0] = 0; grid[0][1] = 0; grid[1][0] = 0; grid[1][1] = 0;
+      var g1 = Validator.checkCells(board, grid, [[2, 0]], 1);
+      assert(!g1.ok && g1.reason === "gap" && g1.occupant === 0, "gap 应返回挡路贴纸下标");
+      assert(g1.cell && g1.cell[0] === 1 && g1.cell[1] === 0, "gap 的 cell 应为挡路贴纸所占格子");
+      var g2 = Validator.checkCells(board, grid, [[0, 0]], 1);
+      assert(!g2.ok && g2.reason === "overlap" && g2.occupant === 0, "overlap 应返回被叠贴纸下标");
+      assert(g2.cell && g2.cell[0] === 0 && g2.cell[1] === 0, "overlap 的 cell 应为冲突格");
+      var g3 = Validator.checkCells(board, grid, [[4, 0]], 1);
+      assert(!g3.ok && g3.reason === "out_of_bounds" && g3.occupant == null, "越界时 occupant 应为 null");
+      var g4 = Validator.checkCells(board, grid, [[2, 2]], 1);
+      assert(g4.ok && g4.cell == null && g4.occupant == null, "合法时无冲突信息");
+      return true;
+    });
+
+    check("障碍格：覆盖非法 / 贴纸与障碍相邻合法", function () {
+      var board = { width: 3, height: 3, blockedCells: [[1, 1]] };
+      var grid = Validator.buildGrid(board);
+      assert(!Validator.checkCells(board, grid, [[1, 1]], 0).ok, "覆盖障碍格应非法");
+      assert(Validator.checkCells(board, grid, [[0, 0]], 0).ok, "普通放置应合法");
+      assert(Validator.checkCells(board, grid, [[1, 0]], 0).ok, "与障碍格相邻应合法（留白只约束贴纸间）");
+      return true;
+    });
+
+    check("旋转几何：domino 90° 变竖排 / 180° 复原", function () {
+      var h = SHAPES.domino_h.cells;
+      var v = Geometry.cellsAtRotation(h, 90);
+      assert(Geometry.cellsKey(v) === Geometry.cellsKey([[0, 0], [0, 1]]), "90° 后应为竖二连");
+      assert(Geometry.cellsKey(Geometry.cellsAtRotation(h, 180)) === Geometry.cellsKey(h), "180° 后占位应等价");
+      var l = SHAPES.tromino_l.cells;
+      var l90 = Geometry.cellsAtRotation(l, 90);
+      assert(l90.length === 3, "L 形旋转后格子数不变");
+      assert(Geometry.cellsKey(Geometry.cellsAtRotation(l, 360)) === Geometry.cellsKey(l), "360° 复原");
+      return true;
+    });
+
+    check("可互换实例去重：4×4 放 2 颗同款草莓 = 96 解", function () {
+      var res = Solver.solve(
+        { width: 4, height: 4, blockedCells: [] },
+        [
+          { id: "a", stickerId: "spring_berry_01", cells: SHAPES.single.cells, rotations: [0] },
+          { id: "b", stickerId: "spring_berry_01", cells: SHAPES.single.cells, rotations: [0] },
+        ],
+        { maxSolutions: 100000 }
+      );
+      assert(res.solutionCount === 96, "实际 " + res.solutionCount + " ≠ 96");
+      return true;
+    });
+
+    check("求解器支持旋转权限（L 三连 4 方向可解）", function () {
+      var res = Solver.solve(
+        { width: 4, height: 4, blockedCells: [] },
+        [{ id: "x", stickerId: "spring_flower_01", cells: SHAPES.tromino_l.cells, rotations: [0, 90, 180, 270] }],
+        { maxSolutions: 100000 }
+      );
+      assert(res.solvable, "应可解");
+      assert(res.solutionCount > 0, "应有解");
+      return true;
+    });
+
+    check("求解器：初始摆放非法时返回不可解", function () {
+      var res = Solver.solve(
+        { width: 4, height: 4, blockedCells: [] },
+        [{ id: "x", stickerId: "spring_berry_01", cells: SHAPES.single.cells, rotations: [0] }],
+        { maxSolutions: 10, initialPlacements: [{ id: "x", x: 9, y: 9, rotation: 0 }] }
+      );
+      assert(!res.solvable && res.failReason === "initial_placements_invalid", "应报初始摆放非法");
+      return true;
+    });
+
+    // ---------- 2.5 提示系统（M2） ----------
+    // 用合成 4×4 关卡确定性地覆盖三种提示的正反分支：
+    // 两块 2×2 圆饼干（square2）：A@(0,0) 时 B 只能去 (2,2)（可完成）；
+    // A@(1,1)（居中）时 B 无任何合法位置（死局）。
+    function makeHintGame(config) {
+      return new Game({
+        levelId: config.levelId,
+        name: "hint-test",
+        board: config.board,
+        rotationTokens: config.rotationTokens || 0,
+        pieces: config.pieces,
+      });
+    }
+    var cookiePair = [
+      { id: "c1", stickerId: "spring_cookie_01", initialRotation: 0 },
+      { id: "c2", stickerId: "spring_cookie_01", initialRotation: 0 },
+    ];
+    var goodGame = makeHintGame({
+      levelId: 901, board: { width: 4, height: 4, blockedCells: [] }, pieces: cookiePair,
+    });
+    goodGame.tryPlace(goodGame.pieces[0], 0, 0);
+    var deadGame = makeHintGame({
+      levelId: 902, board: { width: 4, height: 4, blockedCells: [] }, pieces: cookiePair,
+    });
+    deadGame.tryPlace(deadGame.pieces[0], 1, 1);
+
+    check("Hint3：饼干在角落 → 布局可继续完成", function () {
+      var h = HintManager.hint3(goodGame);
+      assert(h.type === 3 && h.ok === true, "期望可完成，实际 " + JSON.stringify(h));
+      return true;
+    });
+    check("Hint3：饼干居中（4×4）→ 死局", function () {
+      var h = HintManager.hint3(deadGame);
+      assert(h.type === 3 && h.ok === false, "期望死局，实际 " + JSON.stringify(h));
+      return true;
+    });
+    check("Hint2：保留在好位置的贴纸 → 存在完整解", function () {
+      var h = HintManager.hint2(goodGame);
+      assert(h.type === 2 && h.ok === true && h.piece === goodGame.pieces[0], "期望 c1 可保留");
+      return true;
+    });
+    check("Hint2：所有位置都不可行 → ok:false（触发固定文案）", function () {
+      var h = HintManager.hint2(deadGame);
+      assert(h.type === 2 && h.ok === false && !h.reason, "期望 ok:false 且无 reason，实际 " + JSON.stringify(h));
+      return true;
+    });
+    check("Hint1：建议位置合法且属于完整解（锁定后仍可完成）", function () {
+      var h = HintManager.hint1(goodGame, { rand: function () { return 0.99; } });
+      assert(h.ok, "Hint1 应成功，实际 " + JSON.stringify(h));
+      assert(h.piece === goodGame.pieces[1], "唯一未放置的是 c2");
+      assert(h.x === 2 && h.y === 2, "c2 唯一合法位置是 (2,2)，实际 (" + h.x + "," + h.y + ")");
+      var res = goodGame.canPlace(h.piece, h.x, h.y);
+      assert(res.ok, "建议位置应通过游戏判定: " + res.reason);
+      var s = Solver.solve(goodGame.board, HintManager.solverPieces(goodGame, false), {
+        maxSolutions: 1,
+        initialPlacements: HintManager.placedLocks(goodGame)
+          .concat([{ id: h.piece.id, x: h.x, y: h.y, rotation: h.rotation }]),
+      });
+      assert(s.solvable, "锁定建议位置后应仍可完成（属于完整可行解）");
+      return true;
+    });
+    check("Hint1：死局布局 → dead_end（提示重排）", function () {
+      var h = HintManager.hint1(deadGame, { rand: function () { return 0.99; } });
+      assert(h.type === 1 && h.ok === false && h.reason === "dead_end", "期望 dead_end，实际 " + JSON.stringify(h));
+      return true;
+    });
+
+    // Hint 1 Pass B：叶子（横二连，无旋转能力）只剩竖放一条路 →
+    // 提示"需要先解锁旋转"。4×5 棋盘上饼干 (0,0)+(2,3)（二者合法）后，
+    // 叶子横放处处违规；竖放 (3,0)/(0,3) 合法。
+    var rotGame = makeHintGame({
+      levelId: 903, board: { width: 4, height: 5, blockedCells: [] }, rotationTokens: 1,
+      pieces: [
+        { id: "c1", stickerId: "spring_cookie_01", initialRotation: 0 },
+        { id: "c2", stickerId: "spring_cookie_01", initialRotation: 0 },
+        { id: "l1", stickerId: "spring_leaf_01", initialRotation: 0 },
+      ],
+    });
+    rotGame.tryPlace(rotGame.pieces[0], 0, 0);
+    rotGame.tryPlace(rotGame.pieces[1], 2, 3);
+    check("Hint1 Pass B：唯一出路是旋转 → 建议带「需解锁旋转」标记", function () {
+      var h = HintManager.hint1(rotGame, { rand: function () { return 0.99; } });
+      assert(h.ok, "Pass B 应成功，实际 " + JSON.stringify(h));
+      assert(h.piece === rotGame.pieces[2], "唯一未放置的是 l1");
+      assert(h.needsRotationUnlock === true, "应注明需要解锁旋转");
+      assert(h.rotation === 90 || h.rotation === 270, "建议方向应为竖放，实际 " + h.rotation);
+      // 建议坐标在棋盘内 + 竖放形态本身合法（用 validator 直接验）
+      assert(h.x >= 0 && h.y >= 0 && h.x < 4 && h.y < 5, "坐标应在棋盘内");
+      var cells = Geometry.cellsAtRotation(rotGame.pieces[2].shapeCells, h.rotation);
+      var abs = Geometry.absolute(cells, h.x, h.y);
+      assert(Validator.checkCells(rotGame.board, rotGame.grid, abs, rotGame.pieces[2].idx).ok,
+        "竖放形态应通过判定");
+      return true;
+    });
+    check("Hint 方向集合 = 玩家真实能力（未解锁→当前方向；解锁→4 方向）", function () {
+      var lv = makeHintGame({
+        levelId: 904, board: { width: 6, height: 6, blockedCells: [] },
+        pieces: [{ id: "f1", stickerId: "spring_flower_01", initialRotation: 90 }],
+      });
+      var ps = HintManager.solverPieces(lv, false);
+      assert(JSON.stringify(ps[0].rotations) === "[90]", "未解锁应只允许当前方向");
+      lv.pieces[0].rotationAbility = true;
+      ps = HintManager.solverPieces(lv, false);
+      assert(JSON.stringify(ps[0].rotations) === "[0,90,180,270]", "解锁应允许 4 方向");
+      return true;
+    });
+    check("Hint 类型随机：无已放置→仅 Hint1；有已放置→1/2/3 均可能", function () {
+      var empty = makeHintGame({
+        levelId: 905, board: { width: 6, height: 6, blockedCells: [] },
+        pieces: [{ id: "b1", stickerId: "spring_berry_01", initialRotation: 0 }],
+      });
+      for (var i = 0; i < 5; i++) {
+        assert(HintManager.pickType(empty, function () { return 0.99; }) === 1, "无已放置应恒为 1");
+      }
+      empty.tryPlace(empty.pieces[0], 0, 0);
+      var seen = {};
+      for (var j = 0; j < 3; j++) {
+        var t = HintManager.pickType(empty, (function (k) {
+          return function () { return k / 3 + 0.01; };
+        })(j));
+        seen[t] = true;
+      }
+      assert(seen[1] && seen[2] && seen[3], "有已放置时三种类型都应可选: " + JSON.stringify(seen));
+      return true;
+    });
+
+    // ---------- 提示去重（补丁五）----------
+    check("Hint2 去重：已展示过的贴纸跳过，无可行者时返回已看过的（供 getHint 换类型）", function () {
+      var h = HintManager.hint2(goodGame, { seen: ["2:c1"] });
+      assert(h.ok && h.piece === goodGame.pieces[0], "只剩已看过的 c1，应原样返回");
+      assert(HintManager.contentKey(h) === "2:c1", "返回值应命中 seen");
+      return true;
+    });
+    check("提示去重：同布局连续提示不重复，看全后 exhausted，布局变化即重置", function () {
+      var g = makeHintGame({
+        levelId: 906, board: { width: 4, height: 4, blockedCells: [] }, pieces: cookiePair,
+      });
+      g.tryPlace(g.pieces[0], 0, 0);
+      var seen = [], keys = [];
+      var randFix = function () { return 0.9; }; // getHint 顺序确定为 [1,2,3]
+      for (var i = 0; i < 5; i++) {
+        var h = HintManager.getHint(g, { seen: seen, rand: randFix });
+        if (h.type === 0) break;
+        var k = HintManager.contentKey(h);
+        assert(k != null && seen.indexOf(k) === -1, "第 " + (i + 1) + " 次出现了重复提示: " + k);
+        seen.push(k); keys.push(k);
+      }
+      assert(keys.length === 3, "应恰好 3 种不同提示，实际 " + keys.length + ": " + keys.join(" | "));
+      assert(keys[0].indexOf("1:c2:") === 0, "Hint1 key 应带占位格信息: " + keys[0]);
+      // 布局变化（放回托盘）→ 去重记录作废，重新有提示
+      g.sendToTray(g.pieces[0]);
+      var h2 = HintManager.getHint(g, { rand: randFix });
+      assert(h2.type === 1 && h2.ok, "布局变化后应重新给出提示，实际 " + JSON.stringify({ type: h2.type, ok: h2.ok, reason: h2.reason }));
+      return true;
+    });
+    check("提示去重：Hint1 能为同一张贴纸给出没看过的其他可行位置", function () {
+      var g = makeHintGame({
+        levelId: 907, board: { width: 4, height: 5, blockedCells: [] }, rotationTokens: 1,
+        pieces: [
+          { id: "c1", stickerId: "spring_cookie_01", initialRotation: 0 },
+          { id: "c2", stickerId: "spring_cookie_01", initialRotation: 0 },
+          { id: "l1", stickerId: "spring_leaf_01", initialRotation: 0 },
+        ],
+      });
+      g.tryPlace(g.pieces[0], 0, 0);
+      g.tryPlace(g.pieces[1], 2, 3);
+      var randFix = function () { return 0.9; };
+      var h1 = HintManager.hint1(g, { rand: randFix });
+      assert(h1.ok && h1.piece === g.pieces[2], "第一次应建议 l1");
+      var k1 = HintManager.contentKey(h1);
+      var h2 = HintManager.hint1(g, { rand: randFix, seen: [k1] });
+      assert(h2.ok, "第二次仍应成功（找替代位置），实际 " + JSON.stringify(h2));
+      var k2 = HintManager.contentKey(h2);
+      assert(k2 !== k1, "两次建议不应相同");
+      assert(h2.piece === g.pieces[2], "仍应是同一张（唯一未放置）");
+      // 替代位置也必须合法且属于完整解
+      var abs = Geometry.absolute(Geometry.cellsAtRotation(h2.piece.shapeCells, h2.rotation), h2.x, h2.y);
+      assert(Validator.checkCells(g.board, g.grid, abs, h2.piece.idx).ok, "替代位置应通过判定");
+      var s = Solver.solve(g.board, HintManager.solverPieces(g, false), {
+        maxSolutions: 1,
+        initialPlacements: HintManager.placedLocks(g)
+          .concat([{ id: h2.piece.id, x: h2.x, y: h2.y, rotation: h2.rotation }]),
+      });
+      assert(s.solvable, "替代位置锁定后应仍可完成（属于完整可行解）");
+      return true;
+    });
+
+    // ---------- 3. 关卡求解与参考解独立复核 ----------
+    var levelResults = [];
+    var solutionsData = {};
+    LEVELS.forEach(function (lv) {
+      var res = Solver.solve(
+        lv.board,
+        lv.pieces.map(function (p) {
+          return {
+            id: p.id,
+            stickerId: p.stickerId,
+            cells: SHAPES[STICKERS[p.stickerId].shapeId].cells,
+            rotations: [p.initialRotation || 0],
+          };
+        }),
+        { maxSolutions: 20000, timeLimitMs: 30000 }
+      );
+      levelResults.push({
+        levelId: lv.levelId,
+        name: lv.name,
+        isTest: !!lv.isTest,
+        pieces: lv.pieces.length,
+        board: lv.board.width + "×" + lv.board.height,
+        pieceCells: lv.pieces.reduce(function (s, p) {
+          return s + SHAPES[STICKERS[p.stickerId].shapeId].cells.length;
+        }, 0),
+        solvable: res.solvable,
+        solutionCount: res.solutionCount,
+        capped: res.capped,
+        timedOut: res.timedOut,
+        elapsedMs: res.elapsedMs,
+      });
+
+      // 独立复核参考解：全新网格逐张放置并检查全部规则
+      check("关卡 " + lv.levelId + " 参考解独立复核（越界/障碍/重叠/留白）", function () {
+        assert(res.solvable && res.reference, "无可行解");
+        var grid = Validator.buildGrid(lv.board);
+        var placed = new Set();
+        var pieceById = {};
+        lv.pieces.forEach(function (p) { pieceById[p.id] = p; });
+        Object.keys(res.reference).forEach(function (pid) {
+          var p = pieceById[pid];
+          assert(p, "参考解包含未知实例 " + pid);
+          assert(!placed.has(pid), "实例 " + pid + " 被放置了两次");
+          placed.add(pid);
+          var ref = res.reference[pid];
+          var cells = Geometry.cellsAtRotation(
+            SHAPERSHAPE_SAFE(STICKERS[p.stickerId].shapeId).cells, ref.rotation
+          );
+          var abs = Geometry.absolute(cells, ref.x, ref.y);
+          var r = Validator.checkCells(lv.board, grid, abs, -1);
+          assert(r.ok, "参考解中 " + pid + " 放置非法: " + r.reason);
+          abs.forEach(function (c) { grid[c[1]][c[0]] = 1; });
+        });
+        assert(placed.size === lv.pieces.length, "参考解未覆盖所有贴纸");
+        return true;
+      });
+
+      if (res.solvable) {
+        solutionsData[lv.levelId] = {
+          reference: res.reference,
+          solutionCount: res.solutionCount,
+          capped: res.capped,
+          pieceCount: lv.pieces.length,
+          elapsedMs: res.elapsedMs,
+          generatedAt: new Date().toISOString(),
+        };
+      }
+    });
+
+    function SHAPERSHAPE_SAFE(shapeId) {
+      var s = SHAPES[shapeId];
+      if (!s) throw new Error("未知形状: " + shapeId);
+      return s;
+    }
+
+    // ---------- 4. 汇总输出 ----------
+    var allSolvable = levelResults.every(function (r) { return r.solvable; });
+    var report = {
+      ok: failures === 0 && allSolvable,
+      failures: failures,
+      checks: checks,
+      levels: levelResults,
+      stats: {
+        stickerKinds: Object.keys(STICKERS).length,
+        shapeKinds: Object.keys(SHAPES).length,
+        mainLevels: LEVELS.filter(function (l) { return !l.isTest; }).length,
+      },
+      solutionsJs:
+        "// 由 tools/verify.html 生成，请勿手改\n" +
+        "// 结构：SOLUTIONS[levelId] = { reference, solutionCount, capped, pieceCount, elapsedMs, generatedAt }\n" +
+        "const SOLUTIONS = " + JSON.stringify(solutionsData, null, 2) + ";\n\n" +
+        "window.PS = window.PS || {};\nPS.SOLUTIONS = SOLUTIONS;\n",
+    };
+    window.__verifyReport = report;
+
+    var lines = [];
+    lines.push("=== 检查项 ===");
+    checks.forEach(function (c) {
+      lines.push((c.ok ? "[OK]  " : "[FAIL]") + " " + c.name + (c.detail ? "  → " + c.detail : ""));
+    });
+    lines.push("");
+    lines.push("=== 关卡求解 ===");
+    levelResults.forEach(function (r) {
+      lines.push(
+        "关卡 " + r.levelId + (r.isTest ? "(测试)" : "") + " " + r.name +
+        "  棋盘 " + r.board + "  贴纸 " + r.pieces + " 张/" + r.pieceCells + "格" +
+        "  可解: " + (r.solvable ? "是" : "否") +
+        "  解法数: " + r.solutionCount + (r.capped ? "+" : "") +
+        "  耗时 " + r.elapsedMs + "ms"
+      );
+    });
+    lines.push("");
+    lines.push("总计: " + (report.ok ? "全部通过 ✅" : "存在失败 ❌ (" + failures + " 项)"));
+    document.getElementById("out").textContent = lines.join("\n");
+    console.log(lines.join("\n"));
+  })();
+  </script>
+</body>
+</html>

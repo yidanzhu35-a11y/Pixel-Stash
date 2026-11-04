@@ -1,0 +1,180 @@
+/* 贴贴收纳夹 Pixel Stash · M1 原型样式 */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --pink: #ff8fab;
+  --pink-soft: #ffd6e3;
+  --paper: #fffdf7;
+  --ink: #6b4f5e;
+  --ink-soft: #b693a5;
+}
+
+html, body {
+  height: 100%;
+  background: #fdeef4;
+  font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+#app {
+  max-width: 520px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 10px 4px;
+}
+
+/* ---------- 顶栏 ---------- */
+#topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px 10px;
+  flex-wrap: wrap;
+}
+.nav-group { display: flex; align-items: center; gap: 8px; }
+
+#levelLabel {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  min-width: 130px;
+  text-align: center;
+}
+
+.icon-btn, .text-btn, .action-btn, .primary-btn {
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+  background: #ffffff;
+  box-shadow: 0 2px 0 #f3c9d9;
+  transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.icon-btn { width: 36px; height: 32px; font-size: 13px; }
+.text-btn { padding: 7px 14px; }
+.text-btn.hint-btn {
+  background: #fff3d6;
+  color: #a07414;
+  box-shadow: 0 2px 0 #ecd9a8;
+  font-weight: 600;
+}
+.icon-btn:disabled, .text-btn:disabled { opacity: 0.35; cursor: default; }
+.icon-btn:not(:disabled):active, .text-btn:not(:disabled):active, .action-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.badge {
+  background: #e3f2fd;
+  color: #38719e;
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* ---------- 画布 ---------- */
+#boardWrap { display: flex; justify-content: center; }
+#game {
+  width: 100%;
+  display: block;
+  border-radius: 14px;
+}
+
+/* ---------- 操作面板 ---------- */
+#actionPanel {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 86px;
+  display: flex;
+  gap: 8px;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px rgba(150, 100, 130, 0.25);
+  z-index: 30;
+  max-width: 92vw;
+}
+#actionPanel.hidden { display: none; }
+.action-btn { padding: 9px 14px; font-weight: 600; }
+.action-btn.unlock { background: #e3f2fd; color: #38719e; }
+.action-btn.rotate { background: #fff3d6; color: #a07414; }
+.action-btn.deselect { background: #f5edf1; color: var(--ink-soft); }
+
+/* ---------- 页脚 ---------- */
+#footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 4px 10px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+#footer a { color: #c9718f; text-decoration: none; font-weight: 600; }
+
+/* ---------- 气泡 ---------- */
+#toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%) translateY(8px);
+  bottom: 140px;
+  background: rgba(90, 60, 75, 0.92);
+  color: #fff;
+  padding: 9px 18px;
+  border-radius: 14px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+  z-index: 40;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.hidden { display: none; }
+
+/* ---------- 通关结算 ---------- */
+#winOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(253, 238, 244, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(3px);
+}
+#winOverlay.hidden { display: none; }
+.win-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 30px 34px;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(150, 100, 130, 0.3);
+  animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 86vw;
+}
+@keyframes pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.win-emoji { font-size: 44px; margin-bottom: 6px; }
+.win-card h2 { color: #d9628c; font-size: 22px; margin-bottom: 8px; }
+.win-card p { color: var(--ink-soft); font-size: 14px; margin-bottom: 18px; line-height: 1.6; }
+.win-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.primary-btn {
+  background: var(--pink);
+  color: #fff;
+  padding: 10px 20px;
+  font-weight: 700;
+  box-shadow: 0 3px 0 #d9628c;
+}
+.primary-btn:active { transform: translateY(2px); box-shadow: none; }
+#winNextBtn.hidden { display: none; }

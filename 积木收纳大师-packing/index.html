@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>积木收纳大师 · 自由收纳版</title><link rel="stylesheet" href="free-style.css?v=2"></head>
+<body>
+<main class="app">
+  <header><div><span class="eyebrow">玩法试验 / 02 自由收纳</span><h1>慢慢放，刚刚好<span class="title-dot">.</span></h1></div>
+    <div class="controls"><label class="sr-only" for="level">选择关卡</label><select id="level"></select><button id="restart">重玩本关</button></div></header>
+  <div class="intro"><p id="note"></p><span>随时取放 · 所有框开放 · 方向固定 ↑</span></div>
+  <section class="panel workbench"><div class="section-head"><h2>把它们收进木框</h2><span id="progress"></span></div>
+    <div id="frames" class="frames" aria-label="所有木框"></div>
+    <p class="board-help">点选积木，再点空格放置；也可以直接拖动。填满的框仍然可以调整。</p>
+  </section>
+  <section class="panel supply" id="stockPanel"><div class="section-head"><h2>原料盘</h2><span id="remaining"></span></div>
+    <div id="stock" class="stock" aria-label="可自由拿取的积木"></div>
+    <p id="emptyStock" class="empty-stock" hidden>积木都在木框里了；需要调整时，随时可以拿回来。</p>
+    <div class="stock-foot"><p class="subtle">全部积木都在这里，不分上下层。<br>选中框里的积木，点右边按钮放回；也可以直接拖回原料盘。</p><button id="returnPiece" disabled>放回原料盘 ↓</button></div>
+  </section>
+  <div class="bottom-row"><div id="status" role="status" aria-live="polite">选一块积木，放进任意木框。</div><button id="finish" class="primary" disabled>完成收纳 ✓</button></div>
+  <div id="win" class="win" hidden><div><span class="eyebrow">全部收纳完成</span><h2>这一盘，收好了。</h2><p id="winText"></p><button id="next" class="primary">下一关 →</button><button id="keep">再调整一下</button></div></div>
+  <footer><span>方块 + 短条 · 不限步数 · 随时调整</span><a href="layered.html">对比上一版 ↗</a></footer>
+</main><script src="free-core.js?v=2"></script><script src="free-app.js?v=2"></script>
+</body></html>
