@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>桌面收纳 · 文具 Demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <div class="eyebrow">玩法原型 · 全部抽屉开放 · 自由取放</div>
+      <h1>✏️ 桌面收纳</h1>
+    </div>
+    <div class="controls">
+      <select id="level" aria-label="选择关卡"></select>
+      <button id="rotate" title="旋转选中的文具（快捷键 R）">🔄 旋转</button>
+      <button id="restart">↺ 重开</button>
+    </div>
+  </header>
+  <div class="intro">
+    <p id="note"></p>
+    <span id="progress"></span>
+  </div>
+  <div id="status" role="status" aria-live="polite">选一件文具，放进任意抽屉。</div>
+  <div class="frames" id="frames"></div>
+  <section class="panel" id="stockPanel">
+    <div class="section-head">
+      <h2>🧺 原料盘</h2>
+      <span id="remaining"></span>
+    </div>
+    <div class="stock" id="stock"></div>
+    <p id="emptyStock" hidden>托盘空了，文具都收进抽屉啦。</p>
+    <p class="stock-help">点一下文具 = 换方向，任何时候都生效（放不下会自动挪到旁边，整个抽屉放不下就先回托盘）；拖进任意抽屉；随时拖回来重新安排。</p>
+  </section>
+  <footer>
+    规则：全部文具放进抽屉即通关（允许留空隙，后期关卡会刚好装满）。点文具旋转，拖动放置，免费取回。<br>
+    Demo 3 · 色块原型（奶油马卡龙基准） · 视觉占格 = 逻辑占格，页面加载时自动自检（见控制台）。
+  </footer>
+</div>
+<div class="win" id="win" hidden>
+  <div>
+    <h2>🎉 收纳完成</h2>
+    <p id="winText"></p>
+    <div class="win-buttons">
+      <button id="keep">再整理一下</button>
+      <button id="next" class="primary">下一关 →</button>
+    </div>
+  </div>
+</div>
+<script src="core.js"></script>
+<script src="solver.js"></script>
+<script src="art.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

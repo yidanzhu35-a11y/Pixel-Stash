@@ -1,5 +1,5 @@
-# Pixel Stash 本地开发服务器（仅供本地验证使用）
-$root = "C:\Users\yidan.zhu\Desktop\personal"
+# 项目共用本地开发服务器（从脚本位置定位仓库根目录）
+$root = Split-Path -Parent $PSScriptRoot
 $port = 8642
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$port/")

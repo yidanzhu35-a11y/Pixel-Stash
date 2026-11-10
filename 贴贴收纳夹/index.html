@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>贴贴收纳夹 Pixel Stash · M2 原型</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="nav-group">
+        <button id="prevBtn" class="icon-btn" title="上一关">◀</button>
+        <div id="levelLabel">关卡 1 / 3</div>
+        <button id="nextBtn" class="icon-btn" title="下一关">▶</button>
+      </div>
+      <div class="nav-group">
+        <span id="tokenBadge" class="badge hidden">🔑 旋转名额 ×0</span>
+        <button id="hintBtn" class="text-btn hint-btn">💡 提示</button>
+        <button id="resetBtn" class="text-btn">↺ 重置</button>
+      </div>
+    </header>
+
+    <main id="boardWrap">
+      <canvas id="game"></canvas>
+    </main>
+
+    <div id="actionPanel" class="hidden">
+      <button id="unlockBtn" class="action-btn unlock">🔓 解锁旋转</button>
+      <button id="rotateBtn" class="action-btn rotate hidden">↻ 旋转</button>
+      <button id="deselectBtn" class="action-btn deselect">✕</button>
+    </div>
+
+    <footer id="footer">
+      <span>贴贴收纳夹 · M2 原型（提示系统已上线） · <a href="../index.html">项目导航 →</a></span>
+      <a id="testLink" href="?level=test">🧪 旋转测试关</a>
+    </footer>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <div id="winOverlay" class="hidden">
+    <div class="win-card">
+      <div class="win-emoji">🎉</div>
+      <h2 id="winTitle">收纳完成！</h2>
+      <p id="winSub"></p>
+      <div class="win-buttons">
+        <button id="winNextBtn" class="primary-btn">下一关 →</button>
+        <button id="winReplayBtn" class="text-btn">再玩一次</button>
+        <button id="winCloseBtn" class="text-btn">欣赏收藏页</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/data/shapes.js"></script>
+  <script src="js/data/catalog.js"></script>
+  <script src="js/data/levels.js"></script>
+  <script src="js/data/solutions.js"></script>
+  <script src="js/core/geometry.js"></script>
+  <script src="js/core/validator.js"></script>
+  <script src="js/core/solver.js"></script>
+  <script src="js/core/game.js"></script>
+  <script src="js/core/hints.js"></script>
+  <script src="js/ui/art.js"></script>
+  <script src="js/ui/renderer.js"></script>
+  <script src="js/ui/input.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

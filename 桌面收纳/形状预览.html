@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>桌面收纳 · 文具形状库预览</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:26px 20px 46px;background:#f6eee1;color:#5b4f45;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+.wrap{max-width:1080px;margin:0 auto}
+h1{font-size:25px;margin:0 0 8px}
+.sub{font-size:14px;color:#8a7c6e;line-height:1.8;margin:0}
+.summary{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 4px}
+.schip{background:#fffdf8;border:1px solid #eadfc8;border-radius:999px;padding:5px 13px;font-size:13px}
+#cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px;margin-top:18px}
+.card{background:#fffdf8;border-radius:18px;padding:16px;box-shadow:0 4px 16px rgba(91,79,69,.07)}
+.head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.emoji{font-size:22px}
+.name{font-size:18px;font-weight:700}
+.chip{background:#f3e9d6;border-radius:999px;padding:2px 10px;font-size:12px;color:#7a6c5c}
+.role{font-size:13px;color:#8a7c6e;line-height:1.65;margin:9px 0 12px}
+.variants{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.variant{display:flex;flex-direction:column;align-items:center;gap:6px}
+.vcap{font-size:12px;color:#9a8c7c;display:flex;gap:8px;align-items:center}
+.ok{color:#3f9a6e;font-weight:700}
+.bad{color:#d95f4f;font-weight:700}
+section.demo{margin-top:30px;background:#fffdf8;border-radius:18px;padding:18px 20px;box-shadow:0 4px 16px rgba(91,79,69,.07)}
+section.demo h2{font-size:19px;margin:0 0 6px}
+section.demo p{font-size:13px;color:#8a7c6e;line-height:1.7;margin:6px 0}
+footer{margin-top:28px;font-size:12.5px;color:#9a8c7c;line-height:1.9;border-top:1px dashed #e0d3ba;padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>✏️ 桌面收纳 · 文具形状库预览</h1>
+  <p class="sub">色块原型：先确认形状和尺寸，可爱正式素材之后按定稿画风绘制。<br>
+  一个格子 = 一个收纳位。彩色实心 = 文具实际占格；虚线框 = 不占的格子。每个朝向都会自动校验「画出来的 = 逻辑占的」。</p>
+  <div class="summary" id="summary"></div>
+  <div id="cards"></div>
+  <section class="demo">
+    <h2>🗂 示例抽屉：留空隙设计</h2>
+    <p id="drawerCaption"></p>
+    <div id="drawerHolder"></div>
+    <p>红色虚线格 = 本关允许剩下的空隙。前期关卡约 15%–25% 空隙（怎么放都不至于卡死），后期收敛到完全填满。</p>
+  </section>
+  <footer>
+    <div>· 本页图形全部由代码绘制（非 AI 生图），因此可以保证「视觉占格 = 逻辑占格」这条铁律。</div>
+    <div>· 自检方法：对每个朝向的每个格子采样中心像素——占格必须有颜色、空格必须透明；卡片上的 ✓ 即通过。正式素材会并入 verify.html 的四向对齐门。</div>
+    <div>· 本文件可双击直接打开，无外部依赖。</div>
+  </footer>
+</div>
+<script>
+(function(){
+'use strict';
+var CELL=44,S=2,R=7;
+function cellSet(cells){var s={};for(var i=0;i<cells.length;i++)s[cells[i][0]+','+cells[i][1]]=1;return s;}
+function cellPath(cells){var p=new Path2D();for(var i=0;i<cells.length;i++)p.rect(cells[i][0]*CELL,cells[i][1]*CELL,CELL,CELL);return p;}
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function dot(ctx,x,y,r){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();}
+function line(ctx,x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
+function face(ctx,cx,cy,sc){sc=sc||1;
+ ctx.fillStyle='#3a3230';dot(ctx,cx-8*sc,cy-2*sc,2.6*sc);dot(ctx,cx+8*sc,cy-2*sc,2.6*sc);
+ ctx.strokeStyle='#3a3230';ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(cx,cy+3*sc,5*sc,.15*Math.PI,.85*Math.PI);ctx.stroke();
+ ctx.fillStyle='rgba(240,130,150,.38)';dot(ctx,cx-14*sc,cy+5*sc,4.5*sc);dot(ctx,cx+14*sc,cy+5*sc,4.5*sc);}
+function rotated(shape,deg){
+ if(deg===0)return{w:shape.w,h:shape.h,cells:shape.cells};
+ if(deg===90)return{w:shape.h,h:shape.w,cells:shape.cells.map(function(c){return[shape.h-1-c[1],c[0]];})};
+ if(deg===180)return{w:shape.w,h:shape.h,cells:shape.cells.map(function(c){return[shape.w-1-c[0],shape.h-1-c[1]];})};
+ return{w:shape.h,h:shape.w,cells:shape.cells.map(function(c){return[c[1],shape.w-1-c[0]];})};
+}
+var SHAPES=[
+{key:'eraser',emoji:'🧽',name:'橡皮',w:2,h:2,cells:[[0,0],[1,0],[0,1],[1,1]],rots:[0],color:'#f7a6bc',
+ role:'方正填充块，4 格。旋转无意义（转了也一样），入门教学件。',
+ detail:function(ctx){
+  ctx.fillStyle='rgba(255,255,255,.5)';roundRect(ctx,10,9,26,11,5);ctx.fill();
+  face(ctx,44,34);
+  ctx.fillStyle='rgba(255,255,255,.88)';roundRect(ctx,8,60,72,22,6);ctx.fill();
+  ctx.strokeStyle='rgba(219,148,166,.7)';ctx.lineWidth=1.5;roundRect(ctx,8,60,72,22,6);ctx.stroke();
+  ctx.strokeStyle='rgba(219,148,166,.5)';line(ctx,20,65,20,77);line(ctx,68,65,68,77);}},
+{key:'corr',emoji:'🩹',name:'修正带',w:2,h:1,cells:[[0,0],[1,0]],rots:[0,90],color:'#dfe7f0',
+ role:'微型填充件（2 格），救急填缝。要限量出现，防止“万能填充”把关卡变简单。',
+ detail:function(ctx){
+  ctx.strokeStyle='#a9b8cc';ctx.lineWidth=2;line(ctx,14,17,38,17);line(ctx,14,27,38,27);
+  ctx.fillStyle='#9db8d9';roundRect(ctx,48,7,32,30,5);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.35)';roundRect(ctx,52,10,10,24,3);ctx.fill();}},
+{key:'hl',emoji:'🖍️',name:'荧光笔',w:3,h:1,cells:[[0,0],[1,0],[2,0]],rots:[0,90],color:'#b5e07f',
+ role:'短条（3 格）。填铅笔、直尺留下的小空段。',
+ detail:function(ctx){
+  ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=2;line(ctx,12,14,84,14);line(ctx,12,30,84,30);
+  ctx.fillStyle='#8fbe54';roundRect(ctx,96,6,28,32,5);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.3)';roundRect(ctx,100,10,8,24,3);ctx.fill();
+  face(ctx,26,22,.7);}},
+{key:'pencil',emoji:'✏️',name:'铅笔',w:5,h:1,cells:[[0,0],[1,0],[2,0],[3,0],[4,0]],rots:[0,90],color:'#f6cf5f',
+ role:'中长条（5 格）。必须占满一整段，决定行/列走向；笔尖方向就是朝向标识。',
+ detail:function(ctx){
+  ctx.fillStyle='#eac88f';ctx.beginPath();ctx.moveTo(5,22);ctx.lineTo(36,7);ctx.lineTo(36,37);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#5a5751';ctx.beginPath();ctx.moveTo(5,22);ctx.lineTo(16,15);ctx.lineTo(16,29);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(214,178,66,.9)';ctx.lineWidth=1.5;line(ctx,44,13,186,13);line(ctx,44,31,186,31);
+  ctx.fillStyle='#d3d6db';ctx.fillRect(188,6,6,32);
+  ctx.fillStyle='#f29bb4';roundRect(ctx,196,8,16,28,4);ctx.fill();
+  face(ctx,112,21);}},
+{key:'ruler',emoji:'📏',name:'直尺',w:6,h:1,cells:[[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]],rots:[0,90],color:'#a9e2cf',
+ role:'最长条（6 格）。只有长抽屉放得下——制造“哪根进哪个抽屉”的分配压力。',
+ holes:[{x:44,y:22,r:5}],
+ detail:function(ctx){
+  ctx.strokeStyle='#6fb9a2';ctx.lineWidth=1.6;
+  for(var k=0;k<6;k++){line(ctx,9+44*k,9,9+44*k,21);line(ctx,27+44*k,9,27+44*k,15);}
+  ctx.fillStyle='rgba(255,255,255,.55)';roundRect(ctx,158,26,58,9,4);ctx.fill();}},
+{key:'note',emoji:'📒',name:'笔记本',w:2,h:3,cells:[[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]],rots:[0,90],color:'#c3b1ec',
+ role:'大块矩形（6 格）。占一片连续空间，1 格宽的缝塞不进去。',
+ detail:function(ctx){
+  ctx.strokeStyle='#9f89c9';ctx.lineWidth=3.5;
+  var ys=[20,44,68,92,116];
+  for(var i=0;i<ys.length;i++){ctx.beginPath();ctx.arc(1,ys[i],7,0,Math.PI*2);ctx.stroke();}
+  ctx.fillStyle='#fffdf8';roundRect(ctx,16,44,56,44,6);ctx.fill();
+  ctx.strokeStyle='#cbb8ee';ctx.lineWidth=1.5;roundRect(ctx,16,44,56,44,6);ctx.stroke();
+  face(ctx,44,64,.85);
+  ctx.fillStyle='#f6c453';dot(ctx,68,52,2.2);}},
+{key:'tri',emoji:'📐',name:'三角尺',w:3,h:3,cells:[[0,0],[0,1],[1,1],[0,2],[1,2],[2,2]],rots:[0,90,180,270],color:'#a8d4f2',alpha:.62,
+ role:'阶梯三角（6 格，4 向）。唯一能填“台阶空腔”的件，对角线边缘沿格子走。',
+ holes:[{x:44,y:88,r:10}],
+ detail:function(ctx){
+  ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=3;ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.beginPath();
+  var pts=[[44,0],[44,44],[88,44],[88,88],[132,88],[132,132]];
+  for(var i=0;i<pts.length;i++){var x=pts[i][0]+(66-pts[i][0])*.07,y=pts[i][1]+(66-pts[i][1])*.07;
+   if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y);}
+  ctx.stroke();
+  ctx.strokeStyle='#7fb3d6';ctx.lineWidth=2;
+  for(var k=0;k<3;k++)line(ctx,7,44*k+13,15,44*k+13);}},
+{key:'tape',emoji:'🧵',name:'圆形胶带',w:3,h:3,cells:[[1,0],[0,1],[1,1],[2,1],[1,2]],rots:[0],color:'#ffb45e',
+ role:'十字占格（5 格）。圆形在格子上只能近似成“圆角十字”；它周围必然产生 4 个角空位，围绕它规划是乐趣。',
+ detail:function(ctx){
+  ctx.strokeStyle='#e69a3c';ctx.lineWidth=3;
+  ctx.beginPath();ctx.arc(66,66,14,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(66,66,21,0,Math.PI*2);ctx.stroke();
+  face(ctx,66,62);}},
+{key:'stapler',emoji:'📎',name:'订书机',w:2,h:3,cells:[[0,0],[1,0],[0,1],[1,1],[0,2]],rots:[0,90,180,270],color:'#82c9c2',
+ role:'缺角块（5 格，4 向）。缺的一角和三角尺的“多角”互补，配对时很讲究。',
+ detail:function(ctx){
+  ctx.fillStyle='#b2e0da';roundRect(ctx,5,6,78,26,7);ctx.fill();
+  face(ctx,44,19,.75);
+  ctx.fillStyle='#4e8f8c';dot(ctx,44,42,4.5);
+  ctx.strokeStyle='#4e8f8c';ctx.lineWidth=3;ctx.lineCap='round';line(ctx,12,108,40,108);}}
+];
+function nbr(set,i,j,shape){var n=0;
+ var ds=[[-1,-1],[0,-1],[-1,0],[0,0]];
+ for(var d=0;d<4;d++){var x=i+ds[d][0],y=j+ds[d][1];
+  if(x>=0&&y>=0&&x<shape.w&&y<shape.h&&set[x+','+y])n++;}
+ return n;}
+function renderPiece(shape){
+ var W=shape.w*CELL,H=shape.h*CELL;
+ var cv=document.createElement('canvas');cv.width=W*S;cv.height=H*S;
+ var ctx=cv.getContext('2d');ctx.scale(S,S);
+ var set=cellSet(shape.cells);
+ // 底色：占格 + 凹角圆，一次填充（半透明形状不会出现叠影）
+ var base=new Path2D();
+ for(var i=0;i<shape.cells.length;i++)base.rect(shape.cells[i][0]*CELL,shape.cells[i][1]*CELL,CELL,CELL);
+ for(var gx=0;gx<=shape.w;gx++)for(var gy=0;gy<=shape.h;gy++){
+  if(nbr(set,gx,gy,shape)===3){base.moveTo(gx*CELL+R,gy*CELL);base.arc(gx*CELL,gy*CELL,R,0,Math.PI*2);}}
+ ctx.fillStyle=shape.color;
+ if(shape.alpha)ctx.globalAlpha=shape.alpha;
+ ctx.fill(base);
+ ctx.globalAlpha=1;
+ // 凸角圆角：擦除
+ ctx.globalCompositeOperation='destination-out';
+ for(var gx2=0;gx2<=shape.w;gx2++)for(var gy2=0;gy2<=shape.h;gy2++){
+  if(nbr(set,gx2,gy2,shape)===1){ctx.beginPath();ctx.arc(gx2*CELL,gy2*CELL,R,0,Math.PI*2);ctx.fill();}}
+ ctx.globalCompositeOperation='source-over';
+ // 细节（裁剪在占格内）
+ ctx.save();ctx.clip(cellPath(shape.cells));
+ shape.detail(ctx,shape);
+ ctx.restore();
+ // 打孔（尺子/三角尺的挂孔）
+ if(shape.holes){ctx.globalCompositeOperation='destination-out';
+  for(var h=0;h<shape.holes.length;h++){var hh=shape.holes[h];
+   ctx.beginPath();ctx.arc(hh.x,hh.y,hh.r,0,Math.PI*2);ctx.fill();}
+  ctx.globalCompositeOperation='source-over';}
+ return cv;
+}
+function drawRotated(ctx,shape,deg,ox,oy){
+ var rc=rotated(shape,deg),piece=renderPiece(shape);
+ ctx.save();
+ if(deg===0)ctx.drawImage(piece,ox,oy,shape.w*CELL,shape.h*CELL);
+ else{ctx.translate(ox+rc.w*CELL/2,oy+rc.h*CELL/2);ctx.rotate(deg*Math.PI/180);
+  ctx.drawImage(piece,-shape.w*CELL/2,-shape.h*CELL/2,shape.w*CELL,shape.h*CELL);}
+ ctx.restore();
+}
+function selfCheck(ctx,rc,occ){
+ var pass=true;
+ var fs=[[.5,.5],[.2,.5],[.8,.5],[.5,.2],[.5,.8]];
+ for(var y=0;y<rc.h;y++)for(var x=0;x<rc.w;x++){
+  var want=!!occ[x+','+y];
+  for(var f=0;f<fs.length;f++){
+   var lx=Math.round((x+fs[f][0])*CELL),ly=Math.round((y+fs[f][1])*CELL);
+   var a=ctx.getImageData(lx*S,ly*S,1,1).data[3];
+   if(want&&a<50)pass=false;
+   if(!want&&a>50)pass=false;
+  }
+ }
+ return pass;
+}
+function variantFigure(shape,deg){
+ var rc=rotated(shape,deg);
+ var cv=document.createElement('canvas');
+ cv.width=rc.w*CELL*S;cv.height=rc.h*CELL*S;
+ cv.style.width=rc.w*CELL+'px';cv.style.height=rc.h*CELL+'px';
+ var ctx=cv.getContext('2d',{willReadFrequently:true});ctx.scale(S,S);
+ drawRotated(ctx,shape,deg,0,0);
+ var occ=cellSet(rc.cells);
+ ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.strokeStyle='#cfbda8';
+ for(var y=0;y<rc.h;y++)for(var x=0;x<rc.w;x++)if(!occ[x+','+y])
+  ctx.strokeRect(x*CELL+3.5,y*CELL+3.5,CELL-7,CELL-7);
+ ctx.setLineDash([]);
+ var pass=selfCheck(ctx,rc,occ);
+ var fig=document.createElement('div');fig.className='variant';
+ fig.appendChild(cv);
+ var cap=document.createElement('div');cap.className='vcap';
+ var label=(shape.rots.length===1)?'原向':(deg+'°');
+ cap.innerHTML='<span>'+label+'</span><span class="'+(pass?'ok':'bad')+'">'+(pass?'✓ 占格一致':'✗ 需修')+'</span>';
+ fig.appendChild(cap);
+ return{el:fig,pass:pass};
+}
+var cards=document.getElementById('cards');
+var total=0,passed=0,results=[];
+for(var si=0;si<SHAPES.length;si++){
+ var sh=SHAPES[si];
+ var card=document.createElement('section');card.className='card';
+ var head=document.createElement('div');head.className='head';
+ head.innerHTML='<span class="emoji">'+sh.emoji+'</span><span class="name">'+sh.name+'</span>'
+  +'<span class="chip">占格 '+sh.w+'×'+sh.h+'</span><span class="chip">'+sh.cells.length+' 格</span>'
+  +'<span class="chip">'+(sh.rots.length===1?'不旋转':sh.rots.length+' 向旋转')+'</span>';
+ card.appendChild(head);
+ var role=document.createElement('p');role.className='role';role.textContent=sh.role;card.appendChild(role);
+ var vs=document.createElement('div');vs.className='variants';
+ for(var ri=0;ri<sh.rots.length;ri++){
+  var v=variantFigure(sh,sh.rots[ri]);
+  vs.appendChild(v.el);
+  total++;if(v.pass)passed++;
+  results.push({key:sh.key,deg:sh.rots[ri],pass:v.pass});
+ }
+ card.appendChild(vs);
+ cards.appendChild(card);
+}
+document.getElementById('summary').innerHTML=
+ '<span class="schip">'+SHAPES.length+' 种形状</span>'
+ +'<span class="schip">'+total+' 个朝向变体</span>'
+ +'<span class="schip" style="color:'+(passed===total?'#3f9a6e':'#d95f4f')+';font-weight:700">占格自检 '+passed+'/'+total+' 通过</span>';
+window.__PSCHECK={total:total,passed:passed,results:results};
+
+// —— 示例抽屉：留空隙设计 ——
+var DW=7,DH=4,M=14;
+var placed=[
+ {key:'pencil',deg:0,x:0,y:0},{key:'corr',deg:0,x:5,y:0},
+ {key:'ruler',deg:0,x:1,y:1},{key:'tri',deg:0,x:0,y:1},{key:'eraser',deg:0,x:5,y:2}];
+var slack=[[2,2],[3,2],[4,2],[3,3],[4,3]];
+var dcv=document.createElement('canvas');
+dcv.width=(DW*CELL+2*M)*S;dcv.height=(DH*CELL+2*M)*S;
+dcv.style.width=(DW*CELL+2*M)+'px';dcv.style.height=(DH*CELL+2*M)+'px';
+var dctx=dcv.getContext('2d');dctx.scale(S,S);
+roundRect(dctx,3,3,DW*CELL+2*M-6,DH*CELL+2*M-6,14);
+dctx.fillStyle='#fbf4e2';dctx.fill();
+dctx.lineWidth=3;dctx.strokeStyle='#d9c8a4';dctx.stroke();
+dctx.lineWidth=1;dctx.strokeStyle='#eadfc8';
+for(var di=1;di<DW;di++)line(dctx,M+di*CELL,M,M+di*CELL,M+DH*CELL);
+for(var dj=1;dj<DH;dj++)line(dctx,M,M+dj*CELL,M+DW*CELL,M+dj*CELL);
+for(var pi=0;pi<placed.length;pi++){
+ var p=placed[pi];var psh=null;
+ for(var q=0;q<SHAPES.length;q++)if(SHAPES[q].key===p.key)psh=SHAPES[q];
+ drawRotated(dctx,psh,p.deg,M+p.x*CELL,M+p.y*CELL);
+}
+for(var sk=0;sk<slack.length;sk++){
+ var sx=M+slack[sk][0]*CELL,sy=M+slack[sk][1]*CELL;
+ dctx.fillStyle='rgba(224,109,94,.10)';dctx.fillRect(sx,sy,CELL,CELL);
+ dctx.setLineDash([4,3]);dctx.lineWidth=1.5;dctx.strokeStyle='#e08d7d';
+ dctx.strokeRect(sx+3.5,sy+3.5,CELL-7,CELL-7);dctx.setLineDash([]);
+ dctx.fillStyle='#d9826f';dctx.font='12px system-ui,sans-serif';
+ dctx.textAlign='center';dctx.textBaseline='middle';
+ dctx.fillText('空',sx+CELL/2,sy+CELL/2);
+}
+document.getElementById('drawerHolder').appendChild(dcv);
+document.getElementById('drawerCaption').innerHTML=
+ '一个 <b>'+DW+'×'+DH+'</b> 抽屉（'+DW*DH+' 格），收 5 件文具共 23 格，剩 5 格空隙 ≈ <b>18%</b> —— 这是前期难度的样子。';
+console.log('[形状预览] 自检 '+passed+'/'+total, results);
+})();
+</script>
+</body>
+</html>
