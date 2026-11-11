@@ -1,37 +1,77 @@
 (function (root) {
   'use strict';
-  // 数“本质不同解”：同款文具互换不算新解（枚举时强制同款件按位置序递增）。
-  // 到 cap 为止即停止（capped=true 表示“至少这么多”）。
-  // 面积恰好相等的关卡会启用精确填满剪枝，速度大幅提升。
-  function solve(level, cap) {
+  // 输入：关卡（抽屉、待收纳物品、固定物品）＋可选 preset（当前已放置并锁定的实例）。
+  // 输出：是否可完成、完整参考解、本质不同解数量（到 cap 为止，capped=true 表示至少这么多）。
+  // 数「本质不同解」：同款物品互换不算新解（枚举时强制同款按位置序递增）。
+  // 面积恰好相等（余量=0）时启用精确填满剪枝；固定物与镂空（孔=普通空格）天然参与搜索。
+  function solve(level, cap, preset) {
     var core = root.StationeryCore;
     cap = cap || 200;
-    var types = level.items.slice().sort(function (a, b) {
-      var A = core.SHAPES[a].cells.length, B = core.SHAPES[b].cells.length;
+    var SHAPES = core.SHAPES, ITEMS = core.ITEMS;
+    function shapeOf(t) { return SHAPES[ITEMS[t].shape]; }
+    var drawers = level.drawers;
+
+    // 待收纳池（preset 中已放置的实例从池中扣除，保持原样不枚举）
+    var pool = level.pieces.map(core.itemOf);
+    preset = preset || [];
+    for (var pi = 0; pi < preset.length; pi++) {
+      var idx = pool.indexOf(preset[pi].item);
+      if (idx < 0) return { solvable: false, presetIllegal: true, reason: 'preset 引用了关卡之外的物品：' + preset[pi].item };
+      pool.splice(idx, 1);
+    }
+
+    var types = pool.slice().sort(function (a, b) {
+      var A = shapeOf(a).cells.length, B = shapeOf(b).cells.length;
       return B - A || (a < b ? -1 : 1); // 面积降序，同款相邻
     });
     var N = types.length;
-    var drawers = level.drawers;
     var totalCells = drawers.reduce(function (n, d) { return n + d.w * d.h; }, 0);
-    var totalArea = types.reduce(function (n, t) { return n + core.SHAPES[t].cells.length; }, 0);
-    var exact = totalArea === totalCells;
+    var totalArea = types.reduce(function (n, t) { return n + shapeOf(t).cells.length; }, 0);
 
-    // 每款每旋转的占格与尺寸
     var variants = {};
     types.forEach(function (t) {
       if (variants[t]) return;
-      var sh = core.SHAPES[t];
+      var sh = shapeOf(t);
       variants[t] = sh.rots.map(function (deg) {
         return { deg: deg, cells: core.rotatedCells(sh, deg), dims: core.rotatedDims(sh, deg) };
       });
     });
-
-    // 后缀面积（剪枝用）
     var suffixArea = new Array(N + 1).fill(0);
-    for (var i = N - 1; i >= 0; i--) suffixArea[i] = suffixArea[i + 1] + core.SHAPES[types[i]].cells.length;
+    for (var i = N - 1; i >= 0; i--) suffixArea[i] = suffixArea[i + 1] + shapeOf(types[i]).cells.length;
 
     var grids = drawers.map(function (d) { return new Uint8Array(d.w * d.h); });
-    var placedArea = 0;
+
+    function stamp(cells, d, x, y) { // 越界或冲突返回 false
+      var dw = drawers[d].w, dh = drawers[d].h, grid = grids[d];
+      for (var c = 0; c < cells.length; c++) {
+        var gx = x + cells[c][0], gy = y + cells[c][1];
+        if (gx < 0 || gy < 0 || gx >= dw || gy >= dh) return false;
+        if (grid[gy * dw + gx]) return false;
+      }
+      for (var c2 = 0; c2 < cells.length; c2++) grid[(y + cells[c2][1]) * dw + (x + cells[c2][0])] = 1;
+      return true;
+    }
+
+    // 固定物预占格（关卡数据问题单独标记，与「无解」区分）
+    var fixedArea = 0, fixedInvalid = false;
+    (level.fixed || []).forEach(function (f) {
+      var sh = shapeOf(f.item);
+      if (!stamp(core.rotatedCells(sh, f.rot || 0), f.drawer, f.x, f.y)) fixedInvalid = true;
+      else fixedArea += sh.cells.length;
+    });
+    if (fixedInvalid) return { solvable: false, fixedInvalid: true, reason: '固定物越界或互相重叠' };
+
+    // preset 预占格（条件求解：从当前局面继续）
+    var presetArea = 0, presetIllegal = false;
+    preset.forEach(function (s) {
+      var sh = shapeOf(s.item);
+      if (!stamp(core.rotatedCells(sh, s.rot || 0), s.drawer, s.x, s.y)) presetIllegal = true;
+      else presetArea += sh.cells.length;
+    });
+    if (presetIllegal) return { solvable: false, presetIllegal: true, reason: 'preset 布局非法（重叠或越界）' };
+
+    var exact = totalArea === (totalCells - fixedArea - presetArea);
+    var placedArea = fixedArea + presetArea;
     var count = 0, capped = false, first = null;
     var stack = [];
     var lastKey = new Array(N).fill(null);
@@ -59,12 +99,12 @@
       if (i === N) {
         count++;
         if (!first) first = stack.map(function (s) {
-          return { type: s[1], rot: s[2], drawer: s[3], x: s[4], y: s[5] };
+          return { item: s[1], rot: s[2], drawer: s[3], x: s[4], y: s[5] };
         });
         return;
       }
       var free = totalCells - placedArea;
-      if (suffixArea[i] > free) return;             // 剩余文具放不下剩余空格
+      if (suffixArea[i] > free) return;             // 剩余物品放不下剩余空格
       if (exact && suffixArea[i] !== free) return;  // 精确填满关：必须逐步填满
       var t = types[i];
       var vs = variants[t];
@@ -94,7 +134,8 @@
     }
     dfs(0);
     return { solvable: count > 0, count: count, capped: capped, exact: exact,
-             totalCells: totalCells, totalArea: totalArea, first: first };
+             totalCells: totalCells, totalArea: totalArea, fixedArea: fixedArea,
+             presetArea: presetArea, first: first };
   }
 
   var api = { solve: solve };

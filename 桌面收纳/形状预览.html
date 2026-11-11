@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>桌面收纳 · 文具形状库预览</title>
+<title>桌面收纳 · 形状库预览</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;padding:26px 20px 46px;background:#f6eee1;color:#5b4f45;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
@@ -32,9 +32,9 @@ footer{margin-top:28px;font-size:12.5px;color:#9a8c7c;line-height:1.9;border-top
 </head>
 <body>
 <div class="wrap">
-  <h1>✏️ 桌面收纳 · 文具形状库预览</h1>
+  <h1>✏️ 桌面收纳 · 形状库预览</h1>
   <p class="sub">色块原型：先确认形状和尺寸，可爱正式素材之后按定稿画风绘制。<br>
-  一个格子 = 一个收纳位。彩色实心 = 文具实际占格；虚线框 = 不占的格子。每个朝向都会自动校验「画出来的 = 逻辑占的」。</p>
+  一个格子 = 一个收纳位。彩色实心 = 实际占格；虚线框 = 不占的格子。空心发绳中心的洞是真孔——不占格、小件可以放进去。每个朝向都会自动校验「画出来的 = 逻辑占的」。</p>
   <div class="summary" id="summary"></div>
   <div id="cards"></div>
   <section class="demo">
@@ -135,6 +135,18 @@ var SHAPES=[
   ctx.beginPath();ctx.arc(66,66,14,0,Math.PI*2);ctx.stroke();
   ctx.beginPath();ctx.arc(66,66,21,0,Math.PI*2);ctx.stroke();
   face(ctx,66,62);}},
+ {key:'hairTie',emoji:'🎀',name:'空心发绳',w:4,h:4,cells:[[0,0],[1,0],[2,0],[3,0],[0,1],[3,1],[0,2],[3,2],[0,3],[1,3],[2,3],[3,3]],rots:[0],color:'#ef9d8f',
+  role:'镂空验证形状（12 格，不旋转）：4×4 环，中心 2×2 是真孔——橡皮正好放进洞里。M1 机制占位，正式版按规划 §7.2 在日用品主题转正。',
+  detail:function(ctx){
+   ctx.strokeStyle='#c97a63';ctx.lineWidth=5;
+   ctx.beginPath();ctx.arc(88,88,66,0,Math.PI*2);ctx.stroke();
+   ctx.lineWidth=4;
+   ctx.beginPath();ctx.arc(88,88,46,0,Math.PI*2);ctx.stroke();
+   ctx.strokeStyle='rgba(255,255,255,.5)';ctx.lineWidth=6;
+   ctx.beginPath();ctx.arc(88,88,56,-.7,.4);ctx.stroke();
+   face(ctx,88,24,.8);
+   ctx.fillStyle='#f6c453';
+   dot(ctx,78,152,5.5);dot(ctx,98,152,5.5);dot(ctx,88,152,3.5);}},
 {key:'stapler',emoji:'📎',name:'订书机',w:2,h:3,cells:[[0,0],[1,0],[0,1],[1,1],[0,2]],rots:[0,90,180,270],color:'#82c9c2',
  role:'缺角块（5 格，4 向）。缺的一角和三角尺的“多角”互补，配对时很讲究。',
  detail:function(ctx){

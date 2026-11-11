@@ -1,18 +1,36 @@
 (function (root) {
   'use strict';
-  // 文具形状库 v1（2026-11-09 确认：9 种全要）。
-  // cells 为基础朝向（0°）的占格；rots 为该件允许的旋转角度。
-  // 铁律：视觉占格 = 逻辑占格，art.js 按同一份 cells 绘制并自检。
+  // —— 数据分层（50 关项目规划 §8.1）——
+  // SHAPES：纯逻辑形状（占格与允许朝向），可被多个物品复用。
+  // ITEMS ：物品（名称、主题、引用形状）；正式生图素材接入时在这里绑定图片。
+  // 关卡通过 item 引用物品、物品通过 shape 引用形状；实例（pieces/fixed）再引用物品。
+  // 铁律不变：视觉占格 = 逻辑占格，art.js 按同一份 cells 绘制并自检。
   var SHAPES = {
-    eraser:  { name: '橡皮',     w: 2, h: 2, cells: [[0,0],[1,0],[0,1],[1,1]], rots: [0] },
-    corr:    { name: '修正带',   w: 2, h: 1, cells: [[0,0],[1,0]],             rots: [0,90] },
-    hl:      { name: '荧光笔',   w: 3, h: 1, cells: [[0,0],[1,0],[2,0]],       rots: [0,90] },
-    pencil:  { name: '铅笔',     w: 5, h: 1, cells: [[0,0],[1,0],[2,0],[3,0],[4,0]], rots: [0,90] },
-    ruler:   { name: '直尺',     w: 6, h: 1, cells: [[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]], rots: [0,90] },
-    note:    { name: '笔记本',   w: 2, h: 3, cells: [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]], rots: [0,90] },
-    tri:     { name: '三角尺',   w: 3, h: 3, cells: [[0,0],[0,1],[1,1],[0,2],[1,2],[2,2]], rots: [0,90,180,270] },
-    tape:    { name: '圆形胶带', w: 3, h: 3, cells: [[1,0],[0,1],[1,1],[2,1],[1,2]],      rots: [0] },
-    stapler: { name: '订书机',   w: 2, h: 3, cells: [[0,0],[1,0],[0,1],[1,1],[0,2]],       rots: [0,90,180,270] }
+    eraser:  { w: 2, h: 2, cells: [[0,0],[1,0],[0,1],[1,1]], rots: [0] },
+    corr:    { w: 2, h: 1, cells: [[0,0],[1,0]], rots: [0,90] },
+    hl:      { w: 3, h: 1, cells: [[0,0],[1,0],[2,0]], rots: [0,90] },
+    pencil:  { w: 5, h: 1, cells: [[0,0],[1,0],[2,0],[3,0],[4,0]], rots: [0,90] },
+    ruler:   { w: 6, h: 1, cells: [[0,0],[1,0],[2,0],[3,0],[4,0],[5,0]], rots: [0,90] },
+    note:    { w: 2, h: 3, cells: [[0,0],[1,0],[0,1],[1,1],[0,2],[1,2]], rots: [0,90] },
+    tri:     { w: 3, h: 3, cells: [[0,0],[0,1],[1,1],[0,2],[1,2],[2,2]], rots: [0,90,180,270] },
+    tape:    { w: 3, h: 3, cells: [[1,0],[0,1],[1,1],[2,1],[1,2]], rots: [0] },
+    stapler: { w: 2, h: 3, cells: [[0,0],[1,0],[0,1],[1,1],[0,2]], rots: [0,90,180,270] },
+    // 镂空验证形状：4×4 环，中间 2×2 不占格（真孔，可放小件）。
+    ring:    { w: 4, h: 4, cells: [[0,0],[1,0],[2,0],[3,0],[0,1],[3,1],[0,2],[3,2],[0,3],[1,3],[2,3],[3,3]], rots: [0] }
+  };
+
+  var ITEMS = {
+    eraser:  { name: '橡皮',     theme: 'stationery', shape: 'eraser' },
+    corr:    { name: '修正带',   theme: 'stationery', shape: 'corr' },
+    hl:      { name: '荧光笔',   theme: 'stationery', shape: 'hl' },
+    pencil:  { name: '铅笔',     theme: 'stationery', shape: 'pencil' },
+    ruler:   { name: '直尺',     theme: 'stationery', shape: 'ruler' },
+    note:    { name: '笔记本',   theme: 'stationery', shape: 'note' },
+    tri:     { name: '三角尺',   theme: 'stationery', shape: 'tri' },
+    tape:    { name: '圆形胶带', theme: 'stationery', shape: 'tape' },
+    stapler: { name: '订书机',   theme: 'stationery', shape: 'stapler' },
+    // M1 镂空机制占位物品：正式版在日用品主题转正（规划 §7.2 空心发绳）。
+    hairTie: { name: '空心发绳', theme: 'daily', shape: 'ring', placeholder: true }
   };
 
   function rotatedCells(shape, deg) {
@@ -25,31 +43,62 @@
     if (deg === 90 || deg === 270) return { w: shape.h, h: shape.w };
     return { w: shape.w, h: shape.h };
   }
-  function cellsOf(piece) {
-    return rotatedCells(SHAPES[piece.type], piece.rot || 0);
+  function shapeOfItem(item) { return SHAPES[ITEMS[item].shape]; }
+  function cellsOfItem(item, rot) { return rotatedCells(shapeOfItem(item), rot || 0); }
+  function cellsOf(piece) { return cellsOfItem(piece.item, piece.rot); }
+  function itemOf(pc) { return typeof pc === 'string' ? pc : pc.item; }
+  function mulberry32(a) { // 确定性随机：桌面散乱摆放在重开后保持一致
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
   }
 
-  // 关卡：drawers = 抽屉（w 列 × h 行）；items = 文具清单（同款可多件）。
-  // 通关 = 全部文具都在抽屉里；不要求抽屉装满（L1/L2 留空隙，L3 面积恰好相等）。
+  // —— 关卡 ——
+  // drawers：1–3 个抽屉（w 列 × h 行）。
+  // pieces：待收纳实例清单（同款可多件；对象形式可带初始 rot）。
+  // 待收纳物品 drawer === null 时在「桌面」自由摊放：(x,y) 为格单位的小数坐标（左上锚点）；
+  // 桌面只是摊放区，不参与任何合法性判定（A Little to the Left 式的随手摆放）。
+  // fixed：固定物品（开局已在抽屉里、位置朝向固定、不可移动取回；
+  //         占格参与碰撞/旋转/求解，但不计入待收纳任务）。
+  // 通关 = 全部待收纳物品都在抽屉里；允许空隙（精确填满关除外）。
   var LEVELS = [
     { name: '先把文具收进来',
       note: '把所有文具放进抽屉就通关，不用装满，留一点空隙没关系。点一下文具可以换方向；拖进抽屉、拖回托盘，随时都行。',
       drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
-      items: ['eraser', 'eraser', 'hl', 'hl', 'pencil', 'corr'] },
+      pieces: [{ item: 'eraser' }, { item: 'eraser' }, { item: 'hl' }, { item: 'hl' }, { item: 'pencil' }, { item: 'corr' }] },
     { name: '圆的和大件的',
       note: '圆形胶带放下去，四周会留出小角落，这很正常。先安排大件的位置，小件最后填缝。',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
-      items: ['tape', 'note', 'ruler', 'eraser', 'eraser', 'corr', 'corr'] },
+      pieces: [{ item: 'tape' }, { item: 'note' }, { item: 'ruler' }, { item: 'eraser' }, { item: 'eraser' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '刚刚好',
       note: '这一关的文具面积和抽屉一样大：全部收进去时刚好装满，一个空位都不剩。长条文具和小形状各归各位，想想哪个抽屉装哪类。',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
-      items: ['pencil', 'pencil', 'ruler', 'hl', 'corr', 'corr', 'tri', 'stapler'] }
+      pieces: [{ item: 'pencil' }, { item: 'pencil' }, { item: 'ruler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'tri' }, { item: 'stapler' }] },
+    { name: '钉住的直尺',
+      note: '抽屉里有一把被钉住的直尺，不能移动也不能取回。绕开它安排别的物品——它隔出的两条长槽，正好放长条。',
+      drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
+      fixed: [{ item: 'ruler', drawer: 0, x: 0, y: 1 }],
+      pieces: [{ item: 'pencil' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'note' }] },
+    { name: '套圈圈',
+      note: '空心发绳中间的洞是真的孔——小件物品可以放进洞里。发绳是大件：放进大抽屉和别的物品一起收纳，别让它独占一个小抽屉。',
+      drawers: [{ w: 6, h: 2 }, { w: 5, h: 5 }],
+      pieces: [{ item: 'hairTie' }, { item: 'eraser' }, { item: 'ruler' }, { item: 'pencil' }, { item: 'hl' }] },
+    { name: '三个抽屉',
+      note: '三个抽屉同时开放。长条、圆环和大件各归各位——先想清楚哪类物品进哪个抽屉，再动手。',
+      drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }, { w: 3, h: 3 }],
+      pieces: [{ item: 'hairTie' }, { item: 'eraser' }, { item: 'ruler' }, { item: 'pencil' }, { item: 'pencil' }, { item: 'tri' }, { item: 'corr' }] }
   ];
 
   function Game(level) {
     this.level = level;
-    this.pieces = level.items.map(function (t, i) {
-      return { id: i + 1, type: t, rot: 0, drawer: null, x: 0, y: 0 };
+    this.pieces = level.pieces.map(function (pc, i) {
+      return { id: i + 1, item: itemOf(pc), rot: (pc && pc.rot) || 0, drawer: null, x: 0, y: 0 };
+    });
+    this.fixed = (level.fixed || []).map(function (f) {
+      return { item: f.item, rot: f.rot || 0, drawer: f.drawer, x: f.x, y: f.y };
     });
     this.moves = 0;
     this.pop = { id: 0, t: 0 }; // 放置成功的小回弹动画
@@ -57,8 +106,59 @@
   Game.prototype.piece = function (id) {
     return this.pieces.find(function (p) { return p.id === id; }) || null;
   };
+  // 可移动物品（固定物不在 pieces 里，永远不上桌面、不计入待收纳）
   Game.prototype.inDrawer = function (d) {
     return this.pieces.filter(function (p) { return p.drawer === d; });
+  };
+  Game.prototype.fixedIn = function (d) {
+    return this.fixed.filter(function (f) { return f.drawer === d; });
+  };
+  Game.prototype.fixedAt = function (drawer, x, y) {
+    return this.fixed.find(function (f) {
+      return f.drawer === drawer && cellsOfItem(f.item, f.rot).some(function (c) {
+        return f.x + c[0] === x && f.y + c[1] === y;
+      });
+    }) || null;
+  };
+  // —— 桌面自由摊放 ——
+  // scatterTray：开局散乱摆放（带缝隙和抖动，种子确定，重开一致）。
+  Game.prototype.scatterTray = function (w, h, seed) {
+    this.tray = { w: w, h: h };
+    var rnd = mulberry32(seed >>> 0);
+    var cx = 0, cy = 0, rowH = 0;
+    this.pieces.forEach(function (p) {
+      var rd = rotatedDims(shapeOfItem(p.item), p.rot || 0);
+      if (cx > 0 && cx + rd.w > w) { cy += rowH + .5; cx = 0; rowH = 0; }
+      p.drawer = null;
+      p.x = Math.max(0, cx + (rnd() - .5) * .3);
+      p.y = Math.max(0, cy + (rnd() - .5) * .25);
+      cx += rd.w + .3 + rnd() * .5;
+      rowH = Math.max(rowH, rd.h);
+    });
+  };
+  // traySpot：回桌面时找与现有物品重叠最少的位置（实在挤就允许堆着）。
+  Game.prototype.traySpot = function (piece) {
+    var t = this.tray || { w: 12, h: 9 };
+    var rd = rotatedDims(shapeOfItem(piece.item), piece.rot || 0);
+    var others = this.pieces.filter(function (p) { return p.drawer === null && p.id !== piece.id; });
+    var best = { x: 0, y: 0 }, bestScore = Infinity;
+    for (var y = 0; y + rd.h <= t.h + 1e-9; y += .5) {
+      for (var x = 0; x + rd.w <= t.w + 1e-9; x += .5) {
+        var score = 0;
+        for (var i = 0; i < others.length; i++) {
+          var q = others[i], qd = rotatedDims(shapeOfItem(q.item), q.rot || 0);
+          score += Math.max(0, Math.min(x + rd.w, q.x + qd.w) - Math.max(x, q.x)) *
+                   Math.max(0, Math.min(y + rd.h, q.y + qd.h) - Math.max(y, q.y));
+        }
+        score += x * .02 + y * .1; // 轻微偏好上方、左侧
+        if (score < bestScore) { bestScore = score; best = { x: x, y: y }; }
+      }
+    }
+    return best;
+  };
+  Game.prototype.bringTop = function (id) { // 拿起时置顶（桌面堆放的视觉层级）
+    var i = this.pieces.findIndex(function (p) { return p.id === id; });
+    if (i >= 0 && i < this.pieces.length - 1) this.pieces.push(this.pieces.splice(i, 1)[0]);
   };
   Game.prototype.loose = function () {
     return this.pieces.filter(function (p) { return p.drawer === null; });
@@ -66,9 +166,11 @@
   Game.prototype.won = function () {
     return this.loose().length === 0;
   };
+  // 余量（规划 §5.1）：抽屉总格数 − 固定物占格 − 待收纳物品总占格
   Game.prototype.slackCells = function () {
     var total = this.level.drawers.reduce(function (n, d) { return n + d.w * d.h; }, 0);
-    var used = this.pieces.reduce(function (n, p) { return n + cellsOf(p).length; }, 0);
+    var used = this.fixed.reduce(function (n, f) { return n + cellsOfItem(f.item, f.rot).length; }, 0);
+    used += this.pieces.reduce(function (n, p) { return n + cellsOf(p).length; }, 0);
     return total - used;
   };
   Game.prototype.check = function (id, drawer, x, y) {
@@ -88,9 +190,13 @@
       if (q.id === id) return;
       cellsOf(q).forEach(function (c) { occupied[(q.x + c[0]) + ',' + (q.y + c[1])] = 1; });
     });
+    // 固定物永远占格，任何物品都不能重叠
+    this.fixedIn(drawer).forEach(function (f) {
+      cellsOfItem(f.item, f.rot).forEach(function (c) { occupied[(f.x + c[0]) + ',' + (f.y + c[1])] = 1; });
+    });
     for (var j = 0; j < cells.length; j++) {
       if (occupied[(x + cells[j][0]) + ',' + (y + cells[j][1])])
-        return { ok: false, reason: '这里已经有文具了，可以先把它移开。' };
+        return { ok: false, reason: '这里已经有物品了，可以先把它移开。' };
     }
     return { ok: true };
   };
@@ -106,19 +212,33 @@
   };
   Game.prototype.returnPiece = function (id) {
     var p = this.piece(id);
-    if (!p) return { ok: false, reason: '请先选一件文具。' };
-    if (p.drawer !== null) { p.drawer = null; p.x = 0; p.y = 0; this.moves++; }
+    if (!p) return { ok: false, reason: '请先选一件物品。' };
+    if (p.drawer !== null) {
+      p.drawer = null;
+      var spot = this.traySpot(p);
+      p.x = spot.x; p.y = spot.y;
+      this.moves++;
+    }
     return { ok: true };
   };
   Game.prototype.rotatePiece = function (id) {
     var p = this.piece(id);
-    if (!p) return { ok: false, reason: '请先选一件文具。' };
-    var sh = SHAPES[p.type];
-    if (sh.rots.length < 2) return { ok: false, reason: SHAPES[p.type].name + '转不转都一样～' };
+    if (!p) return { ok: false, reason: '请先选一件物品。' };
+    var sh = shapeOfItem(p.item);
+    if (sh.rots.length < 2) return { ok: false, reason: ITEMS[p.item].name + '转不转都一样～' };
     var idx = sh.rots.indexOf(p.rot || 0);
     var next = sh.rots[(idx + 1) % sh.rots.length];
-    if (p.drawer === null) { p.rot = next; return { ok: true, rotated: true }; }
-    // 已放置：任何时候点一下都换方向。原位置放不下时，就近找合法位置；整个抽屉都放不下时带着新方向回托盘。
+    if (p.drawer === null) { // 桌面上：围绕视觉中心换方向
+      var rd0 = rotatedDims(sh, p.rot || 0);
+      var tcx = p.x + rd0.w / 2, tcy = p.y + rd0.h / 2;
+      p.rot = next;
+      var rd1 = rotatedDims(sh, next);
+      var maxX = this.tray ? Math.max(0, this.tray.w - rd1.w) : Infinity;
+      p.x = Math.max(0, Math.min(tcx - rd1.w / 2, maxX));
+      p.y = Math.max(0, tcy - rd1.h / 2);
+      return { ok: true, rotated: true };
+    }
+    // 已放置：任何时候点一下都换方向。原位置放不下时，就近找合法位置；整个抽屉都放不下时带着新方向回桌面。
     var oldRd = rotatedDims(sh, p.rot || 0);
     var cx = p.x + oldRd.w / 2, cy = p.y + oldRd.h / 2;
     p.rot = next;
@@ -134,14 +254,16 @@
       this.pop = { id: id, t: performance.now() };
       return { ok: true, rotated: true, shifted: true };
     }
-    p.drawer = null; p.x = 0; p.y = 0;
+    p.drawer = null;
+    var spot2 = this.traySpot(p);
+    p.x = spot2.x; p.y = spot2.y;
     this.moves++;
     return { ok: true, rotated: true, returned: true };
   };
-  // 在 drawer 内为当前朝向找离 (cx,cy) 最近的合法锚点
+  // 在 drawer 内为当前朝向找离 (cx,cy) 最近的合法锚点（固定物占格自然被 check 排除）
   Game.prototype.findNearestSpot = function (id, drawer, cx, cy) {
     var p = this.piece(id);
-    var sh = SHAPES[p.type];
+    var sh = shapeOfItem(p.item);
     var rd = rotatedDims(sh, p.rot || 0);
     var d = this.level.drawers[drawer];
     var best = null, bestD = Infinity;
@@ -159,12 +281,15 @@
     return {
       drawers: this.level.drawers,
       pieces: this.pieces.map(function (p) {
-        return { id: p.id, type: p.type, rot: p.rot, drawer: p.drawer, x: p.x, y: p.y };
-      })
+        return { id: p.id, item: p.item, rot: p.rot, drawer: p.drawer, x: p.x, y: p.y };
+      }),
+      fixed: this.fixed
     };
   };
 
-  var api = { SHAPES: SHAPES, LEVELS: LEVELS, Game: Game, cellsOf: cellsOf, rotatedCells: rotatedCells, rotatedDims: rotatedDims };
+  var api = { SHAPES: SHAPES, ITEMS: ITEMS, LEVELS: LEVELS, Game: Game, cellsOf: cellsOf,
+              cellsOfItem: cellsOfItem, shapeOfItem: shapeOfItem, itemOf: itemOf,
+              rotatedCells: rotatedCells, rotatedDims: rotatedDims };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.StationeryCore = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

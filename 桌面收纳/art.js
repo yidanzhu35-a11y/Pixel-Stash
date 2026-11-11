@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  // 文具美术：按 core.SHAPES 的同一份 cells 绘制（视觉占格 = 逻辑占格）。
+  // 物品美术：按物品引用形状（ITEMS[item].shape）的同一份 cells 绘制（视觉占格 = 逻辑占格）。ART 以 itemId 为键。
   // 基准格 44px，内部 2x 渲染；drawPiece 可缩放到任意格宽。
   var C = 44, S = 2, R = 7;
   var core = root.StationeryCore;
@@ -85,6 +85,18 @@
       face(ctx, 44, 19, .75);
       ctx.fillStyle = '#4e8f8c'; dot(ctx, 44, 42, 4.5);
       ctx.strokeStyle = '#4e8f8c'; ctx.lineWidth = 3; ctx.lineCap = 'round'; line(ctx, 12, 108, 40, 108);
+    } },
+    // 占位发绳（M1 镂空验证）：4×4 环，中心 2×2 保持透明 = 真孔。
+    hairTie: { color: '#ef9d8f', detail: function (ctx) {
+      ctx.strokeStyle = '#c97a63'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.arc(88, 88, 66, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(88, 88, 46, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(88, 88, 56, -.7, .4); ctx.stroke();
+      face(ctx, 88, 24, .8);
+      ctx.fillStyle = '#f6c453';
+      dot(ctx, 78, 152, 5.5); dot(ctx, 98, 152, 5.5); dot(ctx, 88, 152, 3.5);
     } }
   };
   function cellSet(cells) { var s = {}; cells.forEach(function (c) { s[c[0] + ',' + c[1]] = 1; }); return s; }
@@ -98,9 +110,9 @@
     return n;
   }
   var cache = {};
-  function getPieceCanvas(key) { // 基础朝向（0°）的整件贴图，44px/格
+  function getPieceCanvas(key) { // 基础朝向（0°）的整件贴图，44px/格；key = itemId
     if (cache[key]) return cache[key];
-    var sh = core.SHAPES[key], art = ART[key];
+    var sh = core.SHAPES[core.ITEMS[key].shape], art = ART[key];
     var cv = document.createElement('canvas');
     cv.width = sh.w * C * S; cv.height = sh.h * C * S;
     var ctx = cv.getContext('2d'); ctx.scale(S, S);
@@ -134,9 +146,9 @@
     cache[key] = cv;
     return cv;
   }
-  // 在 (ox,oy) 以 cell 像素/格 画出旋转 deg 的整件文具
+  // 在 (ox,oy) 以 cell 像素/格 画出旋转 deg 的整件物品；key = itemId
   function drawPiece(ctx, key, deg, ox, oy, cell) {
-    var sh = core.SHAPES[key], pc = getPieceCanvas(key);
+    var sh = core.SHAPES[core.ITEMS[key].shape], pc = getPieceCanvas(key);
     var k = cell / C;
     ctx.save();
     if (deg === 0) {
@@ -152,10 +164,11 @@
   // 对齐自检：每款每朝向画出来，逐格采样中心像素（占格必须有颜色、空格必须透明）
   function verifyAlignment() {
     var results = [], all = true;
-    Object.keys(core.SHAPES).forEach(function (key) {
-      core.SHAPES[key].rots.forEach(function (deg) {
-        var rc = core.rotatedCells(core.SHAPES[key], deg);
-        var rd = core.rotatedDims(core.SHAPES[key], deg);
+    Object.keys(core.ITEMS).forEach(function (key) {
+      var sh = core.shapeOfItem(key);
+      sh.rots.forEach(function (deg) {
+        var rc = core.rotatedCells(sh, deg);
+        var rd = core.rotatedDims(sh, deg);
         var cv = document.createElement('canvas');
         cv.width = rd.w * C; cv.height = rd.h * C;
         var ctx = cv.getContext('2d', { willReadFrequently: true });

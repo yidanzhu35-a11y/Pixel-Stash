@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>桌面收纳 · 文具 Demo</title>
+<title>桌面收纳 · 玩法原型</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -15,7 +15,6 @@
     </div>
     <div class="controls">
       <select id="level" aria-label="选择关卡"></select>
-      <button id="rotate" title="旋转选中的文具（快捷键 R）">🔄 旋转</button>
       <button id="restart">↺ 重开</button>
     </div>
   </header>
@@ -23,20 +22,20 @@
     <p id="note"></p>
     <span id="progress"></span>
   </div>
-  <div id="status" role="status" aria-live="polite">选一件文具，放进任意抽屉。</div>
+  <div id="status" role="status" aria-live="polite">物品摊在桌面上，拖进抽屉收纳。</div>
   <div class="frames" id="frames"></div>
   <section class="panel" id="stockPanel">
     <div class="section-head">
-      <h2>🧺 原料盘</h2>
+      <h2>🪵 桌面</h2>
       <span id="remaining"></span>
     </div>
-    <div class="stock" id="stock"></div>
-    <p id="emptyStock" hidden>托盘空了，文具都收进抽屉啦。</p>
-    <p class="stock-help">点一下文具 = 换方向，任何时候都生效（放不下会自动挪到旁边，整个抽屉放不下就先回托盘）；拖进任意抽屉；随时拖回来重新安排。</p>
+    <canvas id="desk" aria-label="桌面：未收纳的物品摊在这里，可任意拖动、点按旋转"></canvas>
+    <p id="emptyStock" hidden>桌面清空了，物品都收进抽屉啦。</p>
+    <p class="stock-help">点一下任何物品 = 换方向（键盘 R 同效）；桌面上的物品随手摊、随便挪，拖进抽屉时自动对齐格子。抽屉里带金色铆钉的物品是被钉住的，不能移动。</p>
   </section>
   <footer>
-    规则：全部文具放进抽屉即通关（允许留空隙，后期关卡会刚好装满）。点文具旋转，拖动放置，免费取回。<br>
-    Demo 3 · 色块原型（奶油马卡龙基准） · 视觉占格 = 逻辑占格，页面加载时自动自检（见控制台）。
+    规则：全部物品放进抽屉即通关（允许留空隙，后期关卡会刚好装满）。物品先摊在桌面上，拖进抽屉自动对齐；点物品旋转，免费取回；钉住的物品不能动。抽屉一行最多排 9 格宽、超出自动换行（依据：数独/猫咪数独手机竖屏一行 9 格的可读上限）。<br>
+    M1 玩法原型 · 桌面自由摊放 + 固定物品 + 镂空（占位空心发绳）演示 · 色块素材为示意，正式素材后续生图接入 · 视觉占格 = 逻辑占格，页面加载时自动自检（见控制台）。
   </footer>
 </div>
 <div class="win" id="win" hidden>
