@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关卡生成器 · 桌面收纳 M2</title>
+<style>
+:root{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#5b4f45}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(180deg,#f7ecd3,#f1dfbe);background-attachment:fixed}
+main{max-width:1090px;margin:auto;padding:24px 22px 40px}
+h1{font-size:24px;margin:2px 0 4px}
+.eyebrow{color:#a08d76;font-size:11px;letter-spacing:2px}
+.sub{color:#8a7c6e;font-size:13px;margin:0 0 16px}
+.controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin-bottom:14px}
+label{font-size:12px;color:#8a7c6e;display:flex;flex-direction:column;gap:3px}
+input,select{font:inherit;color:inherit;border:1px solid #dcc9a8;background:#fffdf8;border-radius:10px;padding:7px 10px;width:76px}
+input[type=checkbox]{width:auto}
+button{font:inherit;color:inherit;border:1px solid #dcc9a8;background:#fffdf8;border-radius:12px;padding:9px 14px;cursor:pointer}
+button:hover{border-color:#c9a15f}
+button.primary{background:#f6c453;border-color:#e0a93c;font-weight:700}
+#summary{font-size:13px;color:#6f6154;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:rgba(255,253,248,.55);border-radius:12px;overflow:hidden}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid rgba(140,110,60,.14);vertical-align:top}
+th{font-size:11px;color:#8a7c6e;font-weight:600}
+tr:last-child td{border-bottom:none}
+.bad{color:#c05b4a}.good{color:#44714e}
+.checks{font-size:11px;line-height:1.9;color:#8a7c6e}
+.checks b{font-weight:600}
+.op{white-space:nowrap}
+.op button{padding:5px 10px;font-size:12px;border-radius:8px;margin-right:6px}
+footer{font-size:11.5px;color:#a5947f;margin-top:18px;line-height:1.8}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">M2 生产工具 · 求解器验证 · 参考解回放</div>
+  <h1>🛠️ 关卡生成器</h1>
+  <p class="sub">从主题素材库选件生成候选关：求解器验证可解、签名去重（含既有 6 关）、硬约束「无单物抽屉」、参考解逐步回放。通过后按难度粗排，可直接试玩或复制 JSON 粘贴进 core.js 的 LEVELS。</p>
+  <div class="controls">
+    <label>种子<input id="seed" type="number" value="20261112"></label>
+    <label>数量<input id="count" type="number" value="10" min="1" max="50"></label>
+    <label>抽屉数<input id="drawers" value="1-3" title="min-max"></label>
+    <label>抽屉宽<input id="wr" value="3-8"></label>
+    <label>抽屉高<input id="hr" value="2-5"></label>
+    <label>件数<input id="pieces" value="4-9"></label>
+    <label>余量格<input id="slack" value="2-10"></label>
+    <label>固定物<input id="fixed" value="0-0"></label>
+    <label>解数上限<input id="cap" type="number" value="200"></label>
+    <label>镂空<input id="hollow" type="checkbox" checked></label>
+    <button id="go" class="primary">生成</button>
+  </div>
+  <div id="summary"></div>
+  <table id="tbl" hidden>
+    <thead><tr><th>#</th><th>抽屉</th><th>物品</th><th>余量</th><th>解数</th><th>检查</th><th>难度分</th><th>操作</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <footer>硬约束：主题一致 · 1–3 抽屉 · ≥2 件 · 余量范围内 · 固定物数量范围内且不越界不重叠 · 可解 · 参考解可回放 · 无单物抽屉。同种子结果可复现；难度分仅供批内排序，最终定级结合试玩。</footer>
+</main>
+<script src="core.js"></script>
+<script src="solver.js"></script>
+<script src="generator.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function range(v) { var m = v.split('-').map(Number); return m.length === 1 ? [m[0], m[0]] : m; }
+  function itemNames(level) {
+    return level.pieces.map(function (p) { return StationeryCore.ITEMS[p.item].name; }).join('、') +
+      (level.fixed && level.fixed.length ? '（固定：' + level.fixed.map(function (f) { return StationeryCore.ITEMS[f.item].name; }).join('、') + '）' : '');
+  }
+  $('go').addEventListener('click', function () {
+    var opts = {
+      seed: Number($('seed').value), count: Number($('count').value),
+      drawers: range($('drawers').value), w: range($('wr').value), h: range($('hr').value),
+      pieces: range($('pieces').value), slack: range($('slack').value), fixed: range($('fixed').value),
+      cap: Number($('cap').value), hollow: $('hollow').checked
+    };
+    $('summary').textContent = '生成中…';
+    setTimeout(function () { // 让状态先渲染
+      var r = StationeryGenerator.generate(opts);
+      $('summary').textContent = '尝试 ' + r.attempts + ' 次，通过 ' + r.candidates.length + ' 关，用时 ' + r.elapsedMs + 'ms（种子 ' + r.seed + '）。';
+      $('rows').innerHTML = r.candidates.map(function (c, i) {
+        var lv = c.level, m = c.metrics;
+        var checks = c.checks.map(function (k) {
+          return '<span class="' + (k.ok ? 'good' : 'bad') + '">' + (k.ok ? '✓' : '✗') + ' ' + k.name + (k.info ? '（' + k.info + '）' : '') + '</span>';
+        }).join('<br>');
+        return '<tr><td>' + (i + 1) + '</td>' +
+          '<td>' + lv.drawers.map(function (d) { return d.w + '×' + d.h; }).join(' + ') + '</td>' +
+          '<td>' + m.pieces + ' 件：' + itemNames(lv) + '</td>' +
+          '<td>' + m.slack + (m.exact ? '（精确填满）' : '') + '</td>' +
+          '<td>' + m.solutions + (m.capped ? '+' : '') + '</td>' +
+          '<td class="checks">' + checks + '</td>' +
+          '<td><b>' + c.score + '</b></td>' +
+          '<td class="op"><button data-i="' + i + '" class="play">试玩</button><button data-i="' + i + '" class="copy">复制 JSON</button></td></tr>';
+      }).join('');
+      $('tbl').hidden = false;
+      Array.prototype.forEach.call(document.querySelectorAll('button.play'), function (b) {
+        b.addEventListener('click', function () {
+          var lv = r.candidates[Number(b.dataset.i)].level;
+          open('index.html#custom=' + encodeURIComponent(JSON.stringify(lv)), '_blank');
+        });
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('button.copy'), function (b) {
+        b.addEventListener('click', function () {
+          var lv = r.candidates[Number(b.dataset.i)].level;
+          var json = JSON.stringify(lv).replace(/"([a-z]+)":/g, '$1:');
+          (navigator.clipboard ? navigator.clipboard.writeText(json) : Promise.reject()).then(function () {
+            b.textContent = '已复制 ✓';
+          }, function () { prompt('手动复制：', json); });
+        });
+      });
+    }, 30);
+  });
+})();
+</script>
+</body>
+</html>

@@ -64,30 +64,25 @@
   // fixed：固定物品（开局已在抽屉里、位置朝向固定、不可移动取回；
   //         占格参与碰撞/旋转/求解，但不计入待收纳任务）。
   // 通关 = 全部待收纳物品都在抽屉里；允许空隙（精确填满关除外）。
+  // 注：不做逐关文字教学（note 字段已移除）——规则统一放页脚，反馈交给状态栏与即时预览。
   var LEVELS = [
     { name: '先把文具收进来',
-      note: '把所有文具放进抽屉就通关，不用装满，留一点空隙没关系。点一下文具可以换方向；拖进抽屉、拖回托盘，随时都行。',
       drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
       pieces: [{ item: 'eraser' }, { item: 'eraser' }, { item: 'hl' }, { item: 'hl' }, { item: 'pencil' }, { item: 'corr' }] },
     { name: '圆的和大件的',
-      note: '圆形胶带放下去，四周会留出小角落，这很正常。先安排大件的位置，小件最后填缝。',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
       pieces: [{ item: 'tape' }, { item: 'note' }, { item: 'ruler' }, { item: 'eraser' }, { item: 'eraser' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '刚刚好',
-      note: '这一关的文具面积和抽屉一样大：全部收进去时刚好装满，一个空位都不剩。长条文具和小形状各归各位，想想哪个抽屉装哪类。',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
       pieces: [{ item: 'pencil' }, { item: 'pencil' }, { item: 'ruler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'tri' }, { item: 'stapler' }] },
     { name: '钉住的直尺',
-      note: '抽屉里有一把被钉住的直尺，不能移动也不能取回。绕开它安排别的物品——它隔出的两条长槽，正好放长条。',
       drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
       fixed: [{ item: 'ruler', drawer: 0, x: 0, y: 1 }],
       pieces: [{ item: 'pencil' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'note' }] },
     { name: '套圈圈',
-      note: '空心发绳中间的洞是真的孔——小件物品可以放进洞里。发绳是大件：放进大抽屉和别的物品一起收纳，别让它独占一个小抽屉。',
       drawers: [{ w: 6, h: 2 }, { w: 5, h: 5 }],
       pieces: [{ item: 'hairTie' }, { item: 'eraser' }, { item: 'ruler' }, { item: 'pencil' }, { item: 'hl' }] },
     { name: '三个抽屉',
-      note: '三个抽屉同时开放。长条、圆环和大件各归各位——先想清楚哪类物品进哪个抽屉，再动手。',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }, { w: 3, h: 3 }],
       pieces: [{ item: 'hairTie' }, { item: 'eraser' }, { item: 'ruler' }, { item: 'pencil' }, { item: 'pencil' }, { item: 'tri' }, { item: 'corr' }] }
   ];
@@ -199,6 +194,31 @@
         return { ok: false, reason: '这里已经有物品了，可以先把它移开。' };
     }
     return { ok: true };
+  };
+  Game.prototype.fitRemaining = function (id, drawer) { // 仅当整片剩余空格恰好等于这件物品时自动选朝向和落点
+    var p = this.piece(id), d = this.level.drawers[drawer];
+    if (!p || !d || p.drawer === drawer) return null;
+    var occupied = {};
+    this.inDrawer(drawer).concat(this.fixedIn(drawer)).forEach(function (q) {
+      cellsOf(q).forEach(function (c) { occupied[(q.x + c[0]) + ',' + (q.y + c[1])] = true; });
+    });
+    var empty = [];
+    for (var y = 0; y < d.h; y++) for (var x = 0; x < d.w; x++) {
+      if (!occupied[x + ',' + y]) empty.push([x, y]);
+    }
+    var shape = shapeOfItem(p.item);
+    if (empty.length !== shape.cells.length) return null;
+    var minX = Math.min.apply(null, empty.map(function (c) { return c[0]; }));
+    var minY = Math.min.apply(null, empty.map(function (c) { return c[1]; }));
+    var emptyKeys = {};
+    empty.forEach(function (c) { emptyKeys[c[0] + ',' + c[1]] = true; });
+    var rots = [p.rot || 0].concat(shape.rots.filter(function (r) { return r !== (p.rot || 0); }));
+    for (var i = 0; i < rots.length; i++) {
+      var cells = rotatedCells(shape, rots[i]);
+      if (cells.every(function (c) { return emptyKeys[(minX + c[0]) + ',' + (minY + c[1])]; }))
+        return { drawer: drawer, x: minX, y: minY, rot: rots[i] };
+    }
+    return null;
   };
   Game.prototype.place = function (id, drawer, x, y) {
     var result = this.check(id, drawer, x, y);

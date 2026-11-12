@@ -15,26 +15,23 @@
     </div>
     <div class="controls">
       <select id="level" aria-label="选择关卡"></select>
+      <button id="hint" title="卡住了？让求解器给一步建议（再点一次收起）">💡 提示</button>
       <button id="restart">↺ 重开</button>
     </div>
   </header>
-  <div class="intro">
-    <p id="note"></p>
-    <span id="progress"></span>
+  <div class="statusbar">
+    <p id="status" role="status" aria-live="polite">物品摊在桌面上，拖进抽屉收纳。</p>
   </div>
-  <div id="status" role="status" aria-live="polite">物品摊在桌面上，拖进抽屉收纳。</div>
-  <div class="frames" id="frames"></div>
-  <section class="panel" id="stockPanel">
-    <div class="section-head">
-      <h2>🪵 桌面</h2>
-      <span id="remaining"></span>
+  <section class="panel" id="stockPanel" aria-label="桌面">
+    <div class="playfield" id="playfield">
+      <canvas id="desk" aria-label="桌面：未收纳的物品摊在这里，可任意拖动、点按旋转"></canvas>
+      <div class="frames" id="frames"></div>
     </div>
-    <canvas id="desk" aria-label="桌面：未收纳的物品摊在这里，可任意拖动、点按旋转"></canvas>
     <p id="emptyStock" hidden>桌面清空了，物品都收进抽屉啦。</p>
-    <p class="stock-help">点一下任何物品 = 换方向（键盘 R 同效）；桌面上的物品随手摊、随便挪，拖进抽屉时自动对齐格子。抽屉里带金色铆钉的物品是被钉住的，不能移动。</p>
+    <p class="stock-help">点一下任何物品 = 换方向（键盘 R 同效）；物品可在抽屉四周随手摆放，拖进抽屉时自动对齐格子。剩余空格恰好吻合时，物品会自动转向嵌合。带金色铆钉的物品被钉住，不能移动。</p>
   </section>
   <footer>
-    规则：全部物品放进抽屉即通关（允许留空隙，后期关卡会刚好装满）。物品先摊在桌面上，拖进抽屉自动对齐；点物品旋转，免费取回；钉住的物品不能动。抽屉一行最多排 9 格宽、超出自动换行（依据：数独/猫咪数独手机竖屏一行 9 格的可读上限）。<br>
+    规则：全部物品放进抽屉即通关（允许留空隙，后期关卡会刚好装满）。物品先摊在桌面上，拖进抽屉自动对齐；点物品旋转，免费取回；钉住的物品不能动。抽屉一行最多排 9 格宽、超出自动换行（依据：数独/猫咪数独手机竖屏一行 9 格的可读上限）。卡住了点右上「💡 提示」：摆得通就指出下一件放哪，走不通就指出挪哪件，建议都经过求解器验证。<br>
     M1 玩法原型 · 桌面自由摊放 + 固定物品 + 镂空（占位空心发绳）演示 · 色块素材为示意，正式素材后续生图接入 · 视觉占格 = 逻辑占格，页面加载时自动自检（见控制台）。
   </footer>
 </div>
