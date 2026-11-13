@@ -4,7 +4,10 @@
   // 输出：是否可完成、完整参考解、本质不同解数量（到 cap 为止，capped=true 表示至少这么多）。
   // 数「本质不同解」：同款物品互换不算新解（枚举时强制同款按位置序递增）。
   // 面积恰好相等（余量=0）时启用精确填满剪枝；固定物与镂空（孔=普通空格）天然参与搜索。
-  function solve(level, cap, preset) {
+  // maxNodes：搜索节点预算（默认无限）。超预算提前中止并标记 timeout=true——此时 count/solvable
+  // 都只是部分结果，调用方必须把 timeout 当「未知」处理（生成器拒绝、提示系统答「再试」），不能当无解。
+  // 节点数对同一份输入是确定的（与机器速度无关），适合作为可复现的预算单位。
+  function solve(level, cap, preset, maxNodes) {
     var core = root.StationeryCore;
     cap = cap || 200;
     var SHAPES = core.SHAPES, ITEMS = core.ITEMS;
@@ -73,6 +76,8 @@
     var exact = totalArea === (totalCells - fixedArea - presetArea);
     var placedArea = fixedArea + presetArea;
     var count = 0, capped = false, first = null;
+    var nodes = 0, timedOut = false;
+    var nodeLimit = (typeof maxNodes === 'number' && maxNodes > 0) ? maxNodes : Infinity;
     var stack = [];
     var lastKey = new Array(N).fill(null);
 
@@ -96,6 +101,7 @@
 
     function dfs(i) {
       if (count >= cap) { capped = true; return; }
+      if (++nodes > nodeLimit) { timedOut = true; return; }
       if (i === N) {
         count++;
         if (!first) first = stack.map(function (s) {
@@ -126,7 +132,7 @@
               stack.pop();
               placedArea -= v.cells.length;
               setCells(d, v, x, y, 0);
-              if (capped) return;
+              if (capped || timedOut) return;
             }
           }
         }
@@ -134,6 +140,7 @@
     }
     dfs(0);
     return { solvable: count > 0, count: count, capped: capped, exact: exact,
+             timeout: timedOut, nodes: nodes,
              totalCells: totalCells, totalArea: totalArea, fixedArea: fixedArea,
              presetArea: presetArea, first: first };
   }

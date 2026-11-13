@@ -97,6 +97,137 @@
       face(ctx, 88, 24, .8);
       ctx.fillStyle = '#f6c453';
       dot(ctx, 78, 152, 5.5); dot(ctx, 98, 152, 5.5); dot(ctx, 88, 152, 3.5);
+    } },
+    // —— M2 定稿占位素材（正式生图接入前）：主色 + 极简辨识细节，全部走同一裁剪管线 ——
+    // 日用品
+    key: { color: '#f2c14e', detail: function (ctx) { // 2×2 L：上格钥匙环，下行钥匙柄+齿
+      ctx.strokeStyle = '#c9922e'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(22, 22, 11, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#c9922e'; ctx.fillRect(52, 60, 8, 7); ctx.fillRect(66, 72, 8, 6);
+      face(ctx, 26, 66, .55);
+    } },
+    tissue: { color: '#bfe3ee', detail: function (ctx) { // 2×3
+      ctx.fillStyle = '#ffffff'; roundRect(ctx, 28, 42, 32, 14, 7); ctx.fill(); // 探出的纸巾
+      ctx.fillStyle = 'rgba(255,255,255,.85)'; roundRect(ctx, 20, 52, 48, 22, 11); ctx.fill(); // 抽纸口
+      face(ctx, 44, 102, .65);
+    } },
+    comb: { color: '#e8b184', detail: function (ctx) { // 4×2 缺角：上行脊、下行齿
+      ctx.strokeStyle = '#c98a54'; ctx.lineWidth = 2;
+      line(ctx, 44, 50, 44, 82); line(ctx, 88, 50, 88, 82); // 齿缝
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3; line(ctx, 10, 12, 166, 12);
+      face(ctx, 22, 22, .55);
+    } },
+    wallet: { color: '#d9a066', detail: function (ctx) { // 2×2
+      ctx.fillStyle = '#f5e0b8'; roundRect(ctx, 14, 12, 60, 20, 4); ctx.fill(); // 露出的卡片
+      ctx.strokeStyle = '#b57f42'; ctx.lineWidth = 2; line(ctx, 12, 50, 76, 50);
+      face(ctx, 44, 66, .6);
+    } },
+    mirror: { color: '#cfd8e3', detail: function (ctx) { // 3×3 十字：镜面椭圆
+      ctx.fillStyle = '#eef6fb'; ctx.beginPath(); ctx.ellipse(66, 66, 26, 20, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#9fb2c5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(66, 66, 26, 20, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2.5; line(ctx, 54, 60, 64, 48);
+    } },
+    // 数码配件
+    earbuds: { color: '#f2f4f7', detail: function (ctx) { // 2×2
+      ctx.strokeStyle = '#c2ccd9'; ctx.lineWidth = 2; roundRect(ctx, 10, 10, 68, 68, 16); ctx.stroke();
+      ctx.fillStyle = '#d7dee8'; dot(ctx, 30, 38, 9); dot(ctx, 58, 38, 9); // 两只耳机
+      face(ctx, 44, 62, .55);
+    } },
+    usb: { color: '#8fa8c8', detail: function (ctx) { // 2×1
+      ctx.fillStyle = '#d9dee6'; roundRect(ctx, 6, 10, 24, 24, 3); ctx.fill(); // 金属头
+      ctx.fillStyle = '#aab4c2'; ctx.fillRect(12, 17, 5, 4); ctx.fillRect(21, 17, 5, 4);
+      face(ctx, 58, 22, .5);
+    } },
+    charger: { color: '#eceff3', detail: function (ctx) { // 2×2 L：上格插脚
+      ctx.fillStyle = '#b9c2cd'; ctx.fillRect(13, 6, 5, 14); ctx.fillRect(26, 6, 5, 14);
+      ctx.strokeStyle = '#c9d2dc'; ctx.lineWidth = 2; roundRect(ctx, 12, 52, 64, 26, 6); ctx.stroke();
+      face(ctx, 40, 65, .55);
+    } },
+    cable: { color: '#9db8d9', detail: function (ctx) { // 3×2 U：沿凹槽走线
+      ctx.strokeStyle = '#6f8fb8'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(22, 24); ctx.lineTo(22, 64); ctx.lineTo(110, 64); ctx.lineTo(110, 24); ctx.stroke();
+      ctx.fillStyle = '#5a5751'; roundRect(ctx, 14, 8, 16, 16, 4); ctx.fill(); roundRect(ctx, 102, 8, 16, 16, 4); ctx.fill();
+    } },
+    powerbank: { color: '#7fb6a4', detail: function (ctx) { // 4×2
+      ctx.fillStyle = 'rgba(255,255,255,.85)'; roundRect(ctx, 14, 30, 34, 28, 5); ctx.fill(); // 电量窗
+      ctx.fillStyle = '#5e8f80'; ctx.fillRect(20, 36, 8, 16); ctx.fillRect(31, 36, 8, 16);
+      face(ctx, 120, 44, .8);
+    } },
+    mouse: { color: '#c9ced6', detail: function (ctx) { // 2×3
+      ctx.strokeStyle = '#9aa3af'; ctx.lineWidth = 2; line(ctx, 44, 8, 44, 46); // 左右键分线
+      ctx.fillStyle = '#8a94a1'; roundRect(ctx, 39, 16, 10, 18, 5); ctx.fill(); // 滚轮
+      face(ctx, 44, 94, .7);
+    } },
+    // 梳妆用品
+    lipstick: { color: '#e2637e', detail: function (ctx) { // 2×1
+      ctx.fillStyle = '#5f4b56'; roundRect(ctx, 6, 8, 26, 28, 4); ctx.fill(); // 管壳
+      ctx.fillStyle = '#f28aa0'; roundRect(ctx, 40, 10, 36, 24, 5); ctx.fill(); // 膏体段
+      face(ctx, 58, 22, .5);
+    } },
+    compact: { color: '#f3c6d3', detail: function (ctx) { // 3×3 十字
+      ctx.fillStyle = '#e8a0b4'; ctx.beginPath(); ctx.arc(66, 66, 24, 0, Math.PI * 2); ctx.fill(); // 粉芯
+      ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(58, 58, 8, 0, Math.PI * 2); ctx.fill();
+      face(ctx, 66, 64, .6);
+    } },
+    handcream: { color: '#f7d9a8', detail: function (ctx) { // 2×3
+      ctx.fillStyle = '#e8b878'; roundRect(ctx, 14, 8, 60, 20, 6); ctx.fill(); // 旋盖
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 3; line(ctx, 20, 48, 68, 48);
+      face(ctx, 44, 88, .7);
+    } },
+    perfume: { color: '#c5a8e0', detail: function (ctx) { // 3×2 T：顶行中间是瓶盖
+      ctx.fillStyle = '#8f76b8'; roundRect(ctx, 52, 6, 28, 16, 4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; roundRect(ctx, 52, 52, 28, 26, 5); ctx.fill();
+      face(ctx, 66, 64, .55);
+    } },
+    browpen: { color: '#a97e5b', detail: function (ctx) { // 3×1
+      ctx.fillStyle = '#7a5638'; ctx.beginPath(); ctx.moveTo(4, 22); ctx.lineTo(18, 12); ctx.lineTo(18, 32); ctx.closePath(); ctx.fill(); // 笔尖
+      ctx.strokeStyle = 'rgba(255,255,255,.4)'; ctx.lineWidth = 2; line(ctx, 30, 14, 118, 14);
+      face(ctx, 76, 22, .55);
+    } },
+    clip: { color: '#e8a0b4', detail: function (ctx) { // 3×2 S
+      ctx.strokeStyle = '#c06b88'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      line(ctx, 56, 16, 120, 16); line(ctx, 12, 72, 76, 72); // 两条齿条
+      ctx.fillStyle = '#c06b88'; dot(ctx, 50, 50, 4); // 弹簧点
+      face(ctx, 66, 50, .5);
+    } },
+    // 零食
+    donut: { color: '#f2b8c6', detail: function (ctx) { // 4×4 环：中心 2×2 真孔保持透明
+      ctx.strokeStyle = '#d98a9e'; ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(88, 88, 66, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(88, 88, 46, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#fff3f7';
+      dot(ctx, 44, 40, 3); dot(ctx, 132, 52, 3); dot(ctx, 48, 136, 3); dot(ctx, 128, 136, 3); // 糖针
+      face(ctx, 88, 26, .7);
+    } },
+    candy: { color: '#f6a8d8', detail: function (ctx) { // 2×1
+      ctx.fillStyle = '#e87fb8';
+      ctx.beginPath(); ctx.moveTo(4, 22); ctx.lineTo(16, 8); ctx.lineTo(16, 36); ctx.closePath(); ctx.fill(); // 左扭结
+      ctx.beginPath(); ctx.moveTo(84, 22); ctx.lineTo(72, 8); ctx.lineTo(72, 36); ctx.closePath(); ctx.fill(); // 右扭结
+      face(ctx, 44, 22, .5);
+    } },
+    choc: { color: '#8a5a3b', detail: function (ctx) { // 4×2
+      ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.lineWidth = 2;
+      for (var k = 1; k < 4; k++) line(ctx, 44 * k, 8, 44 * k, 80);
+      line(ctx, 8, 44, 168, 44);
+      ctx.fillStyle = 'rgba(255,255,255,.18)'; roundRect(ctx, 10, 10, 60, 14, 6); ctx.fill();
+    } },
+    jelly: { color: '#a8ddf0', alpha: .78, detail: function (ctx) { // 2×2 半透明果冻杯
+      ctx.fillStyle = 'rgba(255,255,255,.6)'; roundRect(ctx, 16, 12, 56, 16, 8); ctx.fill();
+      ctx.fillStyle = '#f29bb4'; dot(ctx, 44, 34, 4); // 顶上樱桃
+      face(ctx, 44, 56, .6);
+    } },
+    milk: { color: '#bfe0f2', detail: function (ctx) { // 2×3
+      ctx.fillStyle = '#ffffff'; roundRect(ctx, 16, 8, 56, 24, 4); ctx.fill(); // 屋顶盖
+      ctx.strokeStyle = '#8fc0dd'; ctx.lineWidth = 2; line(ctx, 16, 20, 72, 20);
+      ctx.fillStyle = '#ffffff'; roundRect(ctx, 20, 52, 48, 34, 6); ctx.fill(); // 标签
+      face(ctx, 44, 68, .6);
+    } },
+    nuts: { color: '#e0b184', detail: function (ctx) { // 3×3 缺两角
+      ctx.strokeStyle = '#b8854f'; ctx.lineWidth = 2;
+      line(ctx, 50, 12, 118, 12); line(ctx, 16, 116, 82, 116); // 袋口/袋底折线
+      ctx.fillStyle = '#9c6b3f'; dot(ctx, 66, 60, 6); dot(ctx, 84, 72, 5); dot(ctx, 56, 80, 5); // 坚果
+      face(ctx, 66, 46, .55);
     } }
   };
   function cellSet(cells) { var s = {}; cells.forEach(function (c) { s[c[0] + ',' + c[1]] = 1; }); return s; }

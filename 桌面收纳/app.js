@@ -505,7 +505,8 @@
     }, 420);
   }
 
-  // —— 提示系统（规划 §4）：求解器根据当前布局生成；建议都属于至少一种完整解法；超时（>1.2s）返回重试，与无解区分 ——
+  // —— 提示系统（规划 §4）：求解器根据当前布局生成；建议都属于至少一种完整解法；超时（节点预算 HINT_NODES 或 >1.2s）返回重试，与无解区分 ——
+  var HINT_NODES = 600000; // 单次求解的节点预算：保证 50 关（含精确填满关）上每次调用有界，不卡死 UI
   function computeHint() {
     if (game.loose().length === 0) return null; // 已收完（通关流程接管）
     var t0 = performance.now();
@@ -513,8 +514,8 @@
     var preset = game.pieces.filter(function (p) { return p.drawer !== null; }).map(function (p) {
       return { item: p.item, drawer: p.drawer, x: p.x, y: p.y, rot: p.rot || 0 };
     });
-    var r = solver.solve(game.level, 1, preset);
-    if (tooSlow()) return { kind: 'retry' };
+    var r = solver.solve(game.level, 1, preset, HINT_NODES);
+    if (r.timeout || tooSlow()) return { kind: 'retry' };
     if (r.solvable && r.first && r.first.length) {
       // first 只含待收纳物品的摆位（preset 不进栈）；第一条 = 面积最大的一件，即「先大件」的建议顺序
       var s = r.first[0];
@@ -528,7 +529,8 @@
       if (tooSlow()) return { kind: 'retry' };
       var q = placed[i];
       var pr2 = preset.filter(function (u) { return !(u.item === q.item && u.drawer === q.drawer && u.x === q.x && u.y === q.y); });
-      var r2 = solver.solve(game.level, 1, pr2);
+      var r2 = solver.solve(game.level, 1, pr2, HINT_NODES);
+      if (r2.timeout) continue; // 这条分支未知，换一件试
       if (r2.solvable && r2.first) {
         var s2 = r2.first.find(function (e) { return e.item === q.item; });
         return s2 ? { kind: 'move', item: q.item, pieceId: q.id, rot: s2.rot, drawer: s2.drawer, x: s2.x, y: s2.y,
@@ -537,7 +539,8 @@
       }
     }
     if (tooSlow()) return { kind: 'retry' };
-    return solver.solve(game.level, 1).solvable ? { kind: 'reset' } : { kind: 'retry' }; // 只能整局重来 / 求解超时（与无解区分）
+    var r3 = solver.solve(game.level, 1, null, HINT_NODES);
+    return (!r3.timeout && r3.solvable) ? { kind: 'reset' } : { kind: 'retry' }; // 只能整局重来 / 求解超时（与无解区分）
   }
   function hintAnim() { // 呼吸高亮动画：提示存在期间低频重绘
     cancelAnimationFrame(hintRaf);
