@@ -22,6 +22,8 @@
 
   // 四个试玩验证过的文具样本（原 core.LEVELS[0..3]），内嵌于此使量产与 core.js 现状解耦
   var SAMPLES = {
+    1: { drawers: [{ w: 6, h: 4 }],
+         pieces: [{ item: 'eraser' }, { item: 'note' }, { item: 'stapler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }] },
     3: { drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
          pieces: [{ item: 'eraser' }, { item: 'eraser' }, { item: 'hl' }, { item: 'hl' }, { item: 'pencil' }, { item: 'corr' }] },
     5: { drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
@@ -35,7 +37,7 @@
 
   // [槽位, 主题, 抽屉[[w,h]..], 件数[lo,hi], 余量[lo,hi], 固定[lo,hi], 解数带lo, 解数带hi, 必含|null]
   var SLOTS = [
-    [1,  'stationery', [[6, 3]],                     [4, 4],  [6, 8], [0, 0], 100, 999, null],
+    [1,  'stationery', null,                         null,    null,   null,   100, 999, null], // 六件、五形状、余量2格的教学样本
     [2,  'stationery', [[6, 3]],                     [5, 5],  [4, 6], [0, 0], 100, 999, null],
     [3,  'stationery', null,                         null,    null,   null,   100, 999, null], // 样本
     [4,  'stationery', [[6, 3], [3, 3]],             [6, 6],  [4, 6], [0, 0], 30,  100, ['ruler']],

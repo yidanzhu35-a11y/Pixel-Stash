@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>桌面收纳 · 玩法原型</title>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261113c">
 </head>
 <body>
 <div class="app">
@@ -19,8 +19,15 @@
       <button id="restart">↺ 重开</button>
     </div>
   </header>
+  <aside id="tutorial" class="tutorial" aria-label="第一关操作教学" hidden>
+    <div class="tutorial-head"><span id="tutorialCount"></span><button id="tutorialSkip">跳过教学</button></div>
+    <ol class="tutorial-steps"><li>拖入</li><li>旋转</li><li>调整</li><li>收齐</li></ol>
+    <h2 id="tutorialTitle"></h2><p id="tutorialText" aria-live="polite"></p>
+  </aside>
+  <button id="tutorialShow" class="tutorial-show" hidden>查看操作教学</button>
   <div class="statusbar">
     <p id="status" role="status" aria-live="polite">物品摊在桌面上，拖进抽屉收纳。</p>
+    <span id="progress" aria-live="polite"></span>
   </div>
   <section class="panel" id="stockPanel" aria-label="桌面">
     <div class="playfield" id="playfield">
@@ -31,13 +38,16 @@
     <p class="stock-help">点一下任何物品 = 换方向（键盘 R 同效）；物品可在抽屉四周随手摆放，拖进抽屉时自动对齐格子。剩余空格恰好吻合时，物品会自动转向嵌合。带金色铆钉的物品被钉住，不能移动。</p>
   </section>
   <footer>
-    规则：全部物品放进抽屉即通关（允许留空隙，后期关卡会刚好装满）。物品先摊在桌面上，拖进抽屉自动对齐；点物品旋转，免费取回；钉住的物品不能动。抽屉一行最多排 9 格宽、超出自动换行（依据：数独/猫咪数独手机竖屏一行 9 格的可读上限）。卡住了点右上「💡 提示」：摆得通就指出下一件放哪，走不通就指出挪哪件，建议都经过求解器验证。<br>
-    M3 · 50 关全部就位（五主题 ×10，按难度曲线确定性量产，逐关求解/回放/约束验证）· 当前为代码占位素材，正式素材后续生图接入 · 视觉占格 = 逻辑占格，页面加载时自动自检（见控制台）。
+    全部物品收进抽屉即可通关，可以留空隙。物品随时能取回，钉住的物品不能移动。卡住了可点「💡 提示」。
   </footer>
 </div>
+<canvas id="dragLayer" aria-hidden="true"></canvas>
 <div class="win" id="win" hidden>
-  <div>
-    <h2>🎉 收纳完成</h2>
+  <div class="win-card" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+    <div class="win-confetti" id="winConfetti" aria-hidden="true"></div>
+    <div class="win-medal" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="m32 8 7 15 17 2-12 12 3 18-15-8-15 8 3-18L8 25l17-2z" fill="#fff5c3" stroke="#d89b26" stroke-width="2.5" stroke-linejoin="round"/><path d="m25 32 5 5 10-11" fill="none" stroke="#b58425" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <span class="win-kicker">收纳完成</span>
+    <h2 id="winTitle">你太棒了！</h2>
     <p id="winText"></p>
     <div class="win-buttons">
       <button id="keep">再整理一下</button>
@@ -45,9 +55,22 @@
     </div>
   </div>
 </div>
-<script src="core.js"></script>
+<div class="intro" id="intro" hidden>
+  <div class="intro-card" role="dialog" aria-modal="true" aria-labelledby="introName">
+    <span class="intro-kicker" id="introKicker">新道具</span>
+    <div class="intro-stage"><canvas id="introCanvas" aria-hidden="true" title="戳一下试试"></canvas></div>
+    <h2 id="introName"></h2>
+    <p id="introText" aria-live="polite"></p>
+    <div class="intro-foot">
+      <button id="introNext" class="primary" type="button"></button>
+      <span class="intro-dots" id="introDots" aria-hidden="true"></span>
+    </div>
+    <p class="intro-tip">点任意处继续 · 戳物品它会动 · Esc 跳过</p>
+  </div>
+</div>
+<script src="core.js?v=20261113"></script>
 <script src="solver.js"></script>
 <script src="art.js"></script>
-<script src="app.js"></script>
+<script src="app.js?v=20261113c"></script>
 </body>
 </html>

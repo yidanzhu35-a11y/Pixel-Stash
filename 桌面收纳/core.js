@@ -28,45 +28,46 @@
   };
 
   var ITEMS = {
-    eraser:  { name: '橡皮',     theme: 'stationery', shape: 'eraser' },
-    corr:    { name: '修正带',   theme: 'stationery', shape: 'corr' },
-    hl:      { name: '荧光笔',   theme: 'stationery', shape: 'hl' },
-    pencil:  { name: '铅笔',     theme: 'stationery', shape: 'pencil' },
-    ruler:   { name: '直尺',     theme: 'stationery', shape: 'ruler' },
-    note:    { name: '笔记本',   theme: 'stationery', shape: 'note' },
-    tri:     { name: '三角尺',   theme: 'stationery', shape: 'tri' },
-    tape:    { name: '圆形胶带', theme: 'stationery', shape: 'tape' },
-    stapler: { name: '订书机',   theme: 'stationery', shape: 'stapler' },
-    // 镂空物品以 hollow 标记（生成器识别镂空玩法）；全部素材在正式生图接入前均为代码占位。
-    hairTie: { name: '空心发绳', theme: 'daily', shape: 'ring', hollow: true },
+    // intro：新道具登场卡的一句话（app.js 登场动画用；说形状/占格特点，镂空物品提示真孔）
+    eraser:  { name: '橡皮',     theme: 'stationery', shape: 'eraser',  intro: '方方正正 2×2，压舱小方块' },
+    corr:    { name: '修正带',   theme: 'stationery', shape: 'corr',    intro: '窄窄一条，横竖都能躺' },
+    hl:      { name: '荧光笔',   theme: 'stationery', shape: 'hl',      intro: '三格长条，竖起来更省地' },
+    pencil:  { name: '铅笔',     theme: 'stationery', shape: 'pencil',  intro: '五格长条，抽屉要够深' },
+    ruler:   { name: '直尺',     theme: 'stationery', shape: 'ruler',   intro: '全场最长的一件，先安置它' },
+    note:    { name: '笔记本',   theme: 'stationery', shape: 'note',    intro: '2×3 的大块头，占地不小' },
+    tri:     { name: '三角尺',   theme: 'stationery', shape: 'tri',     intro: '缺角三角，专治不规则角落' },
+    tape:    { name: '圆形胶带', theme: 'stationery', shape: 'tape',    intro: '十字圆团，四角会留空' },
+    stapler: { name: '订书机',   theme: 'stationery', shape: 'stapler', intro: '缺一角的小块，缺口朝角落' },
+    // 镂空物品以 hollow 标记（生成器识别镂空玩法；登场卡会演示小件入孔）；全部素材在正式生图接入前均为代码占位。
+    hairTie: { name: '空心发绳', theme: 'daily', shape: 'ring', hollow: true, intro: '中间是 2×2 真孔，小件能钻进去！' },
     // —— M2 素材清单定稿（规划 §7.1）：五主题共 33 款，通用矩形/长条/异形跨主题共享形状 ——
     // 日用品（11–20 关）：异形与镂空利用
-    key:       { name: '钥匙',     theme: 'daily',   shape: 'key' },
-    tissue:   { name: '纸巾包',   theme: 'daily',   shape: 'note' },
-    comb:     { name: '梳子',     theme: 'daily',   shape: 'comb' },
-    wallet:   { name: '卡包',     theme: 'daily',   shape: 'eraser' },
-    mirror:   { name: '小镜',     theme: 'daily',   shape: 'tape' },
+    key:       { name: '钥匙',     theme: 'daily',   shape: 'key',       intro: '三格小 L，见缝就插' },
+    tissue:   { name: '纸巾包',   theme: 'daily',   shape: 'note',      intro: '软软一大包，占 2×3' },
+    comb:     { name: '梳子',     theme: 'daily',   shape: 'comb',      intro: '长板缺一角，缺口卡角落' },
+    wallet:   { name: '卡包',     theme: 'daily',   shape: 'eraser',    intro: '和橡皮一样，2×2 方块' },
+    mirror:   { name: '小镜',     theme: 'daily',   shape: 'tape',      intro: '圆镜占十字位，角上留空' },
     // 数码配件（21–30 关）：大小件分配
-    earbuds:  { name: '耳机盒',   theme: 'digital', shape: 'eraser' },
-    usb:      { name: 'U 盘',     theme: 'digital', shape: 'corr' },
-    charger:  { name: '充电头',   theme: 'digital', shape: 'key' },
-    cable:    { name: '束好的充电线', theme: 'digital', shape: 'cableU' },
-    powerbank:{ name: '移动电源', theme: 'digital', shape: 'rect42' },
-    mouse:    { name: '鼠标',     theme: 'digital', shape: 'note' },
+    earbuds:  { name: '耳机盒',   theme: 'digital', shape: 'eraser',    intro: '方方一小盒，正好 2×2' },
+    usb:      { name: 'U 盘',     theme: 'digital', shape: 'corr',      intro: '两格小条，塞缝专用' },
+    charger:  { name: '充电头',   theme: 'digital', shape: 'key',       intro: '三格 L 形，四个方向随转' },
+    cable:    { name: '束好的充电线', theme: 'digital', shape: 'cableU', intro: '卷成 U 形，凹槽能卡小件' },
+    powerbank:{ name: '移动电源', theme: 'digital', shape: 'rect42',    intro: '4×2 大板砖，大件优先' },
+    mouse:    { name: '鼠标',     theme: 'digital', shape: 'note',      intro: '圆润大块，占 2×3' },
     // 梳妆用品（31–40 关）：精确填满与边角异形
-    lipstick: { name: '口红',     theme: 'beauty',  shape: 'corr' },
-    compact:  { name: '粉饼盒',   theme: 'beauty',  shape: 'tape' },
-    handcream:{ name: '护手霜',   theme: 'beauty',  shape: 'note' },
-    perfume:  { name: '香水',     theme: 'beauty',  shape: 'bottleT' },
-    browpen:  { name: '眉笔',     theme: 'beauty',  shape: 'hl' },
-    clip:     { name: '发夹',     theme: 'beauty',  shape: 'clipS' },
+    lipstick: { name: '口红',     theme: 'beauty',  shape: 'corr',      intro: '细细一条，缝隙刚好' },
+    compact:  { name: '粉饼盒',   theme: 'beauty',  shape: 'tape',      intro: '圆粉饼占十字位，角上留空' },
+    handcream:{ name: '护手霜',   theme: 'beauty',  shape: 'note',      intro: '高高瘦瘦的 2×3' },
+    perfume:  { name: '香水',     theme: 'beauty',  shape: 'bottleT',   intro: 'T 形小家伙，凸脚要留格' },
+    browpen:  { name: '眉笔',     theme: 'beauty',  shape: 'hl',        intro: '三格细笔，横竖随意' },
+    clip:     { name: '发夹',     theme: 'beauty',  shape: 'clipS',     intro: 'S 形小夹，错格的小方块' },
     // 零食（41–50 关）：综合。甜甜圈复用 ring（真孔），让镂空玩法进入收官主题
-    donut:    { name: '甜甜圈',   theme: 'snack',   shape: 'ring', hollow: true },
-    candy:    { name: '糖果',     theme: 'snack',   shape: 'corr' },
-    choc:     { name: '巧克力',   theme: 'snack',   shape: 'rect42' },
-    jelly:    { name: '果冻',     theme: 'snack',   shape: 'eraser' },
-    milk:     { name: '牛奶盒',   theme: 'snack',   shape: 'note' },
-    nuts:     { name: '袋装坚果', theme: 'snack',   shape: 'bag' }
+    donut:    { name: '甜甜圈',   theme: 'snack',   shape: 'ring', hollow: true, intro: '中间是 2×2 真孔，小零食能钻！' },
+    candy:    { name: '糖果',     theme: 'snack',   shape: 'corr',      intro: '两格小糖，专塞小缝' },
+    choc:     { name: '巧克力',   theme: 'snack',   shape: 'rect42',    intro: '4×2 巧克力板，先给它腾地' },
+    jelly:    { name: '果冻',     theme: 'snack',   shape: 'eraser',    intro: '2×2 果冻，方块垫底' },
+    milk:     { name: '牛奶盒',   theme: 'snack',   shape: 'note',      intro: '2×3 牛奶盒，站得笔直' },
+    nuts:     { name: '袋装坚果', theme: 'snack',   shape: 'bag',       intro: '缺两个对角，边角好朋友' }
   };
 
   function rotatedCells(shape, deg) {
@@ -101,12 +102,12 @@
   // fixed：固定物品（开局已在抽屉里、位置朝向固定、不可移动取回；
   //         占格参与碰撞/旋转/求解，但不计入待收纳任务）。
   // 通关 = 全部待收纳物品都在抽屉里；允许空隙（精确填满关除外）。
-  // 注：不做逐关文字教学（note 字段已移除）——规则统一放页脚，反馈交给状态栏与即时预览。
+  // 第一关通过 UI 分步教学，其余关卡共用规则和按需提示。
   var LEVELS = [
     // —— 文具（1–10）——
     { name: '桌面第一课',
-      drawers: [{ w: 6, h: 3 }],
-      pieces: [{ item: 'eraser' }, { item: 'corr' }, { item: 'corr' }, { item: 'corr' }] },
+      drawers: [{ w: 6, h: 4 }],
+      pieces: [{ item: 'eraser' }, { item: 'note' }, { item: 'stapler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '转个方向',
       drawers: [{ w: 6, h: 3 }],
       pieces: [{ item: 'hl' }, { item: 'corr' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }] },

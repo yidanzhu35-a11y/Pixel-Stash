@@ -31,16 +31,60 @@ canvas{display:block;touch-action:none;max-width:100%;cursor:grab}
 .panel{margin-top:14px}
 #desk{position:absolute;inset:0 auto auto 0;display:block;width:100%;touch-action:none;cursor:grab}
 #desk:active{cursor:grabbing}
+#dragLayer{position:fixed;inset:0;pointer-events:none;z-index:5;max-width:none;cursor:default}
+#progress{flex-shrink:0;font-size:12px;color:#6c7154;background:#fff9e9;border:1px solid #dfd4b3;border-radius:20px;padding:3px 10px}
+.tutorial{background:#f4f6e9;border:1px solid #c9d0a8;border-radius:14px;padding:12px 16px;margin-top:16px;max-width:680px}
+.tutorial[hidden],.tutorial-show[hidden]{display:none}
+.tutorial-head{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#5b6847;font-size:12px}
+.tutorial-head button,.tutorial-show{font-size:11px;padding:4px 9px}
+.tutorial h2{font-size:16px;margin:8px 0 4px;color:#4d5e3c}
+.tutorial p{font-size:12px;line-height:1.7;margin:0;color:#637052}
+.tutorial-steps{display:flex;gap:16px;list-style:none;padding:0;margin:8px 0 0;font-size:11px;color:#929982}
+.tutorial-steps li.active{color:#4c6138;font-weight:700;border-bottom:2px solid #79925c}
+.tutorial-steps li.done{color:#687d52}
+.tutorial-show{margin-top:12px}
 #emptyStock{margin:10px 0 0;font-size:12.5px;color:#9a8c7c}
 .stock-help{font-size:11px;color:#a5947f;margin:10px 0 0}
 footer{font-size:11.5px;color:#a5947f;margin-top:18px;line-height:1.8}
-.win{position:fixed;inset:0;background:rgba(91,79,69,.45);display:flex;align-items:center;justify-content:center;z-index:10}
+.win{position:fixed;inset:0;background:rgba(73,64,48,.34);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:10;overflow:hidden;animation:win-veil .25s ease-out}
 .win[hidden]{display:none}
-.win>div{background:#fffdf8;border-radius:20px;padding:30px 34px;max-width:420px;margin:20px;text-align:center;box-shadow:0 18px 50px rgba(91,79,69,.3);animation:pop-in .25s ease-out}
-.win h2{margin:0 0 10px;font-size:22px}
-.win p{margin:0 0 18px;font-size:14px;line-height:1.8;color:#6f6154}
-.win-buttons{display:flex;gap:10px;justify-content:center}
-@keyframes pop-in{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.win-card{position:relative;width:min(408px,calc(100vw - 32px));background:radial-gradient(ellipse at 50% 0,#fff1bf 0,transparent 58%),#fffdf7;border:1px solid #ffefc8;border-radius:28px;padding:27px 24px 25px;text-align:center;box-shadow:0 24px 80px #49361c40,0 2px 0 #fff7e9 inset;animation:win-card-in .48s cubic-bezier(.2,1.35,.45,1) both}
+.win-medal{position:relative;width:86px;height:86px;margin:0 auto 13px;border-radius:50%;background:linear-gradient(135deg,#ffe9a0,#efb43f);box-shadow:0 7px 22px #e2b94e3d,0 2px 0 #fff2bf inset;display:grid;place-items:center;animation:win-medal-in .65s .08s cubic-bezier(.2,1.6,.4,1) both}
+.win-medal svg{width:61px;height:61px;filter:drop-shadow(0 2px 0 #d19d3055)}
+.win-medal:before{content:"";position:absolute;inset:-9px;border:1px solid #ecc863;border-radius:50%;animation:win-halo 1s .16s ease-out both}
+.win-kicker{display:block;color:#a38a54;font-size:11px;letter-spacing:3px;margin-bottom:8px}
+.win h2{position:relative;margin:0 0 8px;font-size:clamp(23px,6vw,30px);line-height:1.35;letter-spacing:-.5px;color:#665039;text-wrap:balance}
+.win p{margin:0 0 23px;font-size:13px;line-height:1.6;color:#9b896e}
+.win-buttons{position:relative;display:flex;gap:10px;justify-content:center}
+.win-buttons button{min-height:44px;padding:10px 16px;font-size:14px;border-radius:13px}
+.win-buttons .primary{background:linear-gradient(135deg,#ffd66f,#f5bc42);box-shadow:0 4px 12px #e2ad3640;border-color:#edbd56}
+.win-confetti{position:absolute;inset:0;pointer-events:none}
+.win-confetti i{position:absolute;left:50%;top:65px;width:6px;height:11px;border-radius:2px;background:var(--confetti-color);opacity:0;animation:win-confetti 1.15s var(--delay) cubic-bezier(.12,.65,.36,1) both}
+.win-confetti i:nth-child(3n){width:7px;height:7px;border-radius:50%}
+@keyframes win-card-in{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes win-medal-in{from{opacity:0;transform:translateY(10px) rotate(-16deg) scale(.5)}to{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
+@keyframes win-halo{from{opacity:.8;transform:scale(.82)}to{opacity:0;transform:scale(1.28)}}
+@keyframes win-confetti{0%{opacity:0;transform:translate(0,0) rotate(0) scale(.3)}12%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--spin)) scale(.7)}}
+@keyframes win-veil{from{background-color:transparent;backdrop-filter:blur(0)}to{background-color:rgba(73,64,48,.34);backdrop-filter:blur(5px)}}
+@media(prefers-reduced-motion:reduce){.win,.win-card,.win-medal,.win-medal:before{animation:none}.win-confetti{display:none}}
+
+/* —— 新道具登场卡（#intro）：结构与 #win 同体系；一关多款新道具时逐张推进 —— */
+.intro{position:fixed;inset:0;background:rgba(73,64,48,.30);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:11;animation:intro-veil .22s ease-out}
+.intro[hidden]{display:none}
+.intro-card{position:relative;width:min(342px,calc(100vw - 36px));background:radial-gradient(ellipse at 50% 0,#fff1bf 0,transparent 58%),#fffdf7;border:1px solid #ffefc8;border-radius:24px;padding:20px 22px 16px;text-align:center;box-shadow:0 24px 80px #49361c40,0 2px 0 #fff7e9 inset;animation:win-card-in .42s cubic-bezier(.2,1.35,.45,1) both}
+.intro-kicker{display:block;color:#a38a54;font-size:11px;letter-spacing:3px}
+.intro-stage{height:168px;margin:4px 0 2px}
+.intro-stage canvas{width:100%;height:100%;max-width:none;cursor:pointer}
+.intro-card h2{margin:0 0 6px;font-size:clamp(22px,6vw,27px);line-height:1.3;letter-spacing:-.4px;color:#665039}
+#introText{margin:0 0 15px;font-size:13px;line-height:1.6;color:#9b896e}
+.intro-foot{display:flex;flex-direction:column;align-items:center;gap:10px}
+#introNext{min-height:44px;padding:10px 30px;font-size:14px;border-radius:13px}
+.intro-dots{display:flex;gap:6px}
+.intro-dots i{width:7px;height:7px;border-radius:50%;background:#e4d3ac;transition:transform .18s,background .18s}
+.intro-dots i.on{background:#eab543;transform:scale(1.3)}
+.intro-tip{margin:0;font-size:11px;letter-spacing:.5px;color:#c2b08d}
+@keyframes intro-veil{from{background-color:transparent;backdrop-filter:blur(0)}to{background-color:rgba(73,64,48,.30);backdrop-filter:blur(4px)}}
+@media(prefers-reduced-motion:reduce){.intro,.intro-card{animation:none}.intro-dots i,.intro-dots i.on{transition:none}}
 @media(max-width:700px){
   .app{padding:14px 12px 16px}
   header{align-items:flex-start;gap:8px;flex-direction:column}
