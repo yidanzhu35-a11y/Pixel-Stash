@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/%E6%A1%8C%E9%9D%A2%E6%94%B6%E7%BA%B3/index.html",
+      "permanent": false
+    }
+  ]
+}
