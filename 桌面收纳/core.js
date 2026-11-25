@@ -110,23 +110,23 @@
       pieces: [{ item: 'eraser' }, { item: 'note' }, { item: 'stapler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '转个方向',
       drawers: [{ w: 6, h: 3 }],
-      pieces: [{ item: 'hl' }, { item: 'corr' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }] },
+      pieces: [{ item: 'note' }, { item: 'stapler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '先把文具收进来',
-      drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
-      pieces: [{ item: 'eraser' }, { item: 'eraser' }, { item: 'hl' }, { item: 'hl' }, { item: 'pencil' }, { item: 'corr' }] },
+      drawers: [{ w: 6, h: 3 }, { w: 3, h: 2 }],
+      pieces: [{ item: 'eraser' }, { item: 'eraser' }, { item: 'hl' }, { item: 'stapler' }, { item: 'pencil' }, { item: 'corr' }] },
     { name: '长条的去向',
       drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
-      pieces: [{ item: 'ruler' }, { item: 'hl' }, { item: 'pencil' }, { item: 'corr' }, { item: 'corr' }, { item: 'hl' }] },
+      pieces: [{ item: 'ruler' }, { item: 'note' }, { item: 'stapler' }, { item: 'stapler' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '圆的和大件的',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
-      pieces: [{ item: 'tape' }, { item: 'note' }, { item: 'ruler' }, { item: 'eraser' }, { item: 'eraser' }, { item: 'corr' }, { item: 'corr' }] },
+      pieces: [{ item: 'tape' }, { item: 'note' }, { item: 'ruler' }, { item: 'stapler' }, { item: 'stapler' }, { item: 'corr' }, { item: 'corr' }] },
     { name: '刚刚好',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
       pieces: [{ item: 'pencil' }, { item: 'pencil' }, { item: 'ruler' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'tri' }, { item: 'stapler' }] },
     { name: '钉住的直尺',
       drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
       fixed: [{ item: 'ruler', drawer: 0, x: 0, y: 1 }],
-      pieces: [{ item: 'pencil' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'note' }] },
+      pieces: [{ item: 'pencil' }, { item: 'hl' }, { item: 'corr' }, { item: 'corr' }, { item: 'tri' }] }, // 2026-11-15 收紧：note→tri（288→192 解）
     { name: '被切开的抽屉',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
       fixed: [{ item: 'tape', drawer: 1, x: 0, y: 0 }],
@@ -147,7 +147,7 @@
       pieces: [{ item: 'hairTie' }, { item: 'wallet' }, { item: 'wallet' }, { item: 'wallet' }, { item: 'key' }, { item: 'key' }] },
     { name: '套圈圈',
       drawers: [{ w: 6, h: 4 }, { w: 4, h: 3 }],
-      pieces: [{ item: 'hairTie' }, { item: 'key' }, { item: 'wallet' }, { item: 'wallet' }, { item: 'key' }, { item: 'key' }, { item: 'key' }] },
+      pieces: [{ item: 'hairTie' }, { item: 'key' }, { item: 'comb' }, { item: 'wallet' }, { item: 'key' }, { item: 'key' }, { item: 'key' }] }, // 2026-11-15 收紧：wallet→comb（300+→16 解）
     { name: '梳子与缺口',
       drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
       pieces: [{ item: 'comb' }, { item: 'wallet' }, { item: 'wallet' }, { item: 'comb' }, { item: 'key' }, { item: 'key' }, { item: 'key' }] },
@@ -179,29 +179,29 @@
       drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }],
       pieces: [{ item: 'powerbank' }, { item: 'cable' }, { item: 'usb' }, { item: 'usb' }, { item: 'usb' }, { item: 'usb' }] },
     { name: '大小配',
-      drawers: [{ w: 6, h: 3 }, { w: 4, h: 4 }],
+      drawers: [{ w: 6, h: 3 }, { w: 4, h: 3 }], // 2026-11-15 收紧：4x4→4x3（300+→144 解）
       pieces: [{ item: 'powerbank' }, { item: 'cable' }, { item: 'usb' }, { item: 'usb' }, { item: 'mouse' }, { item: 'earbuds' }, { item: 'usb' }] },
     { name: '一分为三',
       drawers: [{ w: 4, h: 3 }, { w: 4, h: 3 }, { w: 3, h: 3 }],
       pieces: [{ item: 'usb' }, { item: 'usb' }, { item: 'charger' }, { item: 'earbuds' }, { item: 'usb' }, { item: 'powerbank' }, { item: 'powerbank' }] },
     { name: '线的拥抱',
-      drawers: [{ w: 4, h: 4 }, { w: 4, h: 3 }, { w: 3, h: 3 }],
-      pieces: [{ item: 'cable' }, { item: 'usb' }, { item: 'usb' }, { item: 'usb' }, { item: 'cable' }, { item: 'earbuds' }, { item: 'powerbank' }, { item: 'earbuds' }] },
+      drawers: [{ w: 4, h: 4 }, { w: 4, h: 3 }, { w: 3, h: 2 }], // 2026-11-15 收紧：3x3→3x2、usb×3→usb×2+charger（300+→208 解）
+      pieces: [{ item: 'cable' }, { item: 'usb' }, { item: 'usb' }, { item: 'charger' }, { item: 'cable' }, { item: 'earbuds' }, { item: 'powerbank' }, { item: 'earbuds' }] },
     { name: '钉住的小角落',
-      drawers: [{ w: 4, h: 4 }, { w: 4, h: 3 }, { w: 3, h: 3 }],
+      drawers: [{ w: 4, h: 4 }, { w: 4, h: 3 }, { w: 3, h: 2 }], // 2026-11-15 收紧：3x3→3x2、小件异形化（300+→20 解）
       fixed: [{ item: 'powerbank', drawer: 0, x: 0, y: 0 }],
-      pieces: [{ item: 'usb' }, { item: 'earbuds' }, { item: 'charger' }, { item: 'usb' }, { item: 'usb' }, { item: 'usb' }, { item: 'cable' }, { item: 'cable' }] },
+      pieces: [{ item: 'usb' }, { item: 'usb' }, { item: 'charger' }, { item: 'charger' }, { item: 'cable' }, { item: 'cable' }, { item: 'cable' }] },
     { name: '连锁去向',
       drawers: [{ w: 5, h: 4 }, { w: 4, h: 3 }, { w: 3, h: 3 }],
       fixed: [{ item: 'usb', drawer: 1, x: 1, y: 2 }],
       pieces: [{ item: 'powerbank' }, { item: 'cable' }, { item: 'earbuds' }, { item: 'mouse' }, { item: 'usb' }, { item: 'charger' }, { item: 'cable' }, { item: 'usb' }, { item: 'usb' }] },
     { name: '紧凑数码',
       drawers: [{ w: 5, h: 4 }, { w: 4, h: 4 }, { w: 3, h: 3 }],
-      pieces: [{ item: 'earbuds' }, { item: 'cable' }, { item: 'usb' }, { item: 'mouse' }, { item: 'usb' }, { item: 'earbuds' }, { item: 'powerbank' }, { item: 'powerbank' }, { item: 'earbuds' }] },
+      pieces: [{ item: 'earbuds' }, { item: 'cable' }, { item: 'usb' }, { item: 'mouse' }, { item: 'usb' }, { item: 'earbuds' }, { item: 'powerbank' }, { item: 'powerbank' }, { item: 'cable' }] }, // 2026-11-15 收紧：earbuds→cable（300+→96 解）
     { name: '接近满格',
       drawers: [{ w: 6, h: 4 }, { w: 5, h: 4 }],
-      fixed: [{ item: 'cable', drawer: 0, x: 2, y: 0, rot: 180 }],
-      pieces: [{ item: 'charger' }, { item: 'powerbank' }, { item: 'mouse' }, { item: 'usb' }, { item: 'powerbank' }, { item: 'usb' }, { item: 'earbuds' }, { item: 'usb' }, { item: 'usb' }] },
+      fixed: [{ item: 'charger', drawer: 0, x: 0, y: 0 }], // 2026-11-15 收紧：固定 cable→charger、cable 回 loose（300+→218 解）
+      pieces: [{ item: 'cable' }, { item: 'powerbank' }, { item: 'mouse' }, { item: 'usb' }, { item: 'powerbank' }, { item: 'usb' }, { item: 'cable' }, { item: 'usb' }, { item: 'usb' }] },
     { name: '精确填满',
       drawers: [{ w: 5, h: 4 }, { w: 4, h: 4 }, { w: 3, h: 3 }],
       fixed: [{ item: 'mouse', drawer: 0, x: 0, y: 0 }],
@@ -249,15 +249,15 @@
       pieces: [{ item: 'browpen' }, { item: 'handcream' }, { item: 'browpen' }, { item: 'perfume' }, { item: 'lipstick' }, { item: 'handcream' }, { item: 'browpen' }, { item: 'perfume' }, { item: 'handcream' }, { item: 'handcream' }] },
     // —— 零食（41–50）——
     { name: '零食开箱',
-      drawers: [{ w: 6, h: 3 }, { w: 4, h: 3 }],
-      pieces: [{ item: 'nuts' }, { item: 'candy' }, { item: 'milk' }, { item: 'candy' }, { item: 'candy' }, { item: 'candy' }, { item: 'candy' }, { item: 'candy' }] },
+      drawers: [{ w: 6, h: 3 }, { w: 3, h: 3 }], // 2026-11-15 收紧：4x3→3x3、糖果减员加果冻（300+→24 解）
+      pieces: [{ item: 'nuts' }, { item: 'candy' }, { item: 'milk' }, { item: 'candy' }, { item: 'jelly' }, { item: 'jelly' }] },
     { name: '甜甜圈来了',
       drawers: [{ w: 5, h: 5 }, { w: 4, h: 4 }],
-      pieces: [{ item: 'donut' }, { item: 'candy' }, { item: 'nuts' }, { item: 'candy' }, { item: 'jelly' }, { item: 'candy' }, { item: 'milk' }, { item: 'candy' }] },
-    { name: '固定与异形',
-      drawers: [{ w: 4, h: 4 }, { w: 4, h: 3 }, { w: 3, h: 3 }],
-      fixed: [{ item: 'candy', drawer: 2, x: 2, y: 1, rot: 90 }],
-      pieces: [{ item: 'milk' }, { item: 'candy' }, { item: 'milk' }, { item: 'choc' }, { item: 'candy' }, { item: 'candy' }, { item: 'candy' }, { item: 'candy' }, { item: 'candy' }] },
+      pieces: [{ item: 'donut' }, { item: 'nuts' }, { item: 'candy' }, { item: 'jelly' }, { item: 'milk' }, { item: 'choc' }] }, // 2026-11-15 收紧：糖果×4→巧克力（减糖果=减组合爆炸，300+→40 解）
+    { name: '糖果满格', // 2026-11-15 收紧+改名（原「固定与异形」名不副实：pieces 全是矩形）：抽屉 4x4+4x3+2x2 精确装满（300+→52 解）
+      drawers: [{ w: 4, h: 4 }, { w: 4, h: 3 }, { w: 2, h: 2 }],
+      fixed: [{ item: 'candy', drawer: 2, x: 0, y: 0 }],
+      pieces: [{ item: 'milk' }, { item: 'candy' }, { item: 'milk' }, { item: 'choc' }, { item: 'candy' }, { item: 'candy' }, { item: 'jelly' }] },
     { name: '坚果袋的凹角',
       drawers: [{ w: 5, h: 4 }, { w: 4, h: 4 }, { w: 3, h: 3 }],
       fixed: [{ item: 'candy', drawer: 2, x: 0, y: 1, rot: 90 }],
@@ -369,13 +369,15 @@
     used += this.pieces.reduce(function (n, p) { return n + cellsOf(p).length; }, 0);
     return total - used;
   };
-  Game.prototype.check = function (id, drawer, x, y) {
+  Game.prototype.check = function (id, drawer, x, y, rot) {
     var p = this.piece(id);
     if (!p || !Number.isInteger(drawer) || !this.level.drawers[drawer] ||
         !Number.isInteger(x) || !Number.isInteger(y))
       return { ok: false, reason: '请选择抽屉里的格子。' };
     var d = this.level.drawers[drawer];
-    var cells = cellsOf(p);
+    if (rot != null && shapeOfItem(p.item).rots.indexOf(rot) < 0)
+      return { ok: false, reason: '这个物品不能转到这个方向。' };
+    var cells = cellsOfItem(p.item, rot == null ? p.rot : rot);
     for (var i = 0; i < cells.length; i++) {
       var cx = x + cells[i][0], cy = y + cells[i][1];
       if (cx < 0 || cy < 0 || cx >= d.w || cy >= d.h)
@@ -421,12 +423,43 @@
     }
     return null;
   };
-  Game.prototype.place = function (id, drawer, x, y) {
-    var result = this.check(id, drawer, x, y);
+  // x/y 是当前朝向的浮点锚点。直接落点优先，放不下才搜索物品中心一格以内的合法摆法。
+  // 查询不修改物品；预览、松手与点击放置共用，不能吸到抽屉另一端。
+  Game.prototype.snapPlacement = function (id, drawer, x, y) {
+    var p = this.piece(id), d = this.level.drawers[drawer];
+    if (!p || !d || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+    var rot = p.rot || 0, ax = Math.round(x), ay = Math.round(y);
+    if (this.check(id, drawer, ax, ay, rot).ok)
+      return { drawer: drawer, x: ax, y: ay, rot: rot, assisted: false };
+    var sh = shapeOfItem(p.item), current = rotatedDims(sh, rot);
+    var cx = x + current.w / 2, cy = y + current.h / 2;
+    var radius = .95, best = null, bestScore = Infinity;
+    for (var i = 0; i < sh.rots.length; i++) {
+      var next = sh.rots[i], rd = rotatedDims(sh, next);
+      var turn = Math.abs(next - rot) / 90; turn = Math.min(turn, 4 - turn);
+      var minX = Math.max(0, Math.ceil(cx - rd.w / 2 - radius));
+      var maxX = Math.min(d.w - rd.w, Math.floor(cx - rd.w / 2 + radius));
+      var minY = Math.max(0, Math.ceil(cy - rd.h / 2 - radius));
+      var maxY = Math.min(d.h - rd.h, Math.floor(cy - rd.h / 2 + radius));
+      for (var ny = minY; ny <= maxY; ny++) for (var nx = minX; nx <= maxX; nx++) {
+        var dx = nx + rd.w / 2 - cx, dy = ny + rd.h / 2 - cy, distance = dx * dx + dy * dy;
+        if (distance > radius * radius || !this.check(id, drawer, nx, ny, next).ok) continue;
+        var score = distance + (next === rot ? 0 : .1 + turn * .025);
+        if (score < bestScore) {
+          bestScore = score;
+          best = { drawer: drawer, x: nx, y: ny, rot: next, assisted: true };
+        }
+      }
+    }
+    return best;
+  };
+  Game.prototype.place = function (id, drawer, x, y, rot) {
+    var result = this.check(id, drawer, x, y, rot);
     if (!result.ok) return result;
     var p = this.piece(id);
-    if (p.drawer === drawer && p.x === x && p.y === y) return { ok: true, wasNoop: true };
-    Object.assign(p, { drawer: drawer, x: x, y: y });
+    var nextRot = rot == null ? (p.rot || 0) : rot;
+    if (p.drawer === drawer && p.x === x && p.y === y && (p.rot || 0) === nextRot) return { ok: true, wasNoop: true };
+    Object.assign(p, { drawer: drawer, x: x, y: y, rot: nextRot });
     this.moves++;
     this.pop = { id: id, t: performance.now() };
     return { ok: true, won: this.won() };

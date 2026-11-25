@@ -3,19 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>桌面收纳 · 玩法原型</title>
-<link rel="stylesheet" href="style.css?v=20261113c">
+<title>小满屉 · Full Drawer</title>
+<link rel="stylesheet" href="style.css?v=20261115c">
 </head>
 <body>
 <div class="app">
   <header>
-    <div>
-      <div class="eyebrow">玩法原型 · 全部抽屉开放 · 自由取放</div>
-      <h1>✏️ 桌面收纳</h1>
-    </div>
+    <h1>🌾 小满屉</h1>
     <div class="controls">
-      <select id="level" aria-label="选择关卡"></select>
-      <button id="hint" title="卡住了？让求解器给一步建议（再点一次收起）">💡 提示</button>
+      <div class="levelpicker" id="levelpicker">
+        <button id="levelBtn" aria-haspopup="true" aria-expanded="false" aria-label="选择关卡"></button>
+        <div id="levelPanel" class="levelpanel" hidden></div>
+      </div>
+      <div class="hint-control">
+        <button id="hint" title="卡住了？让求解器给一步建议（再点一次收起）">💡 提示</button>
+        <aside id="hintCoach" class="hint-coach" hidden aria-label="提示按钮引导">
+          <p id="hintCoachText" role="status">不知道怎么收纳的时候，可以用提示～</p>
+          <button id="hintCoachClose" type="button" aria-label="关闭提示按钮引导">知道啦</button>
+        </aside>
+      </div>
       <button id="restart">↺ 重开</button>
     </div>
   </header>
@@ -27,7 +33,16 @@
   <button id="tutorialShow" class="tutorial-show" hidden>查看操作教学</button>
   <div class="statusbar">
     <p id="status" role="status" aria-live="polite">物品摊在桌面上，拖进抽屉收纳。</p>
-    <span id="progress" aria-live="polite"></span>
+    <div class="level-summary" aria-label="收纳进度与本关目标">
+      <div class="summary-item summary-progress">
+        <svg class="summary-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v14H4zM4 9h16M10 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div><span class="summary-label">已收好</span><strong id="progress" aria-live="polite"></strong></div>
+      </div>
+      <div class="summary-item summary-slack">
+        <svg class="summary-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="4" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="4" y="14" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="14" y="14" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.6" stroke-dasharray="2 2"/></svg>
+        <div><span id="slackLabel" class="summary-label">本关可留空</span><strong id="slack"></strong></div>
+      </div>
+    </div>
   </div>
   <section class="panel" id="stockPanel" aria-label="桌面">
     <div class="playfield" id="playfield">
@@ -35,7 +50,7 @@
       <div class="frames" id="frames"></div>
     </div>
     <p id="emptyStock" hidden>桌面清空了，物品都收进抽屉啦。</p>
-    <p class="stock-help">点一下任何物品 = 换方向（键盘 R 同效）；物品可在抽屉四周随手摆放，拖进抽屉时自动对齐格子。剩余空格恰好吻合时，物品会自动转向嵌合。带金色铆钉的物品被钉住，不能移动。</p>
+    <p class="stock-help">点一下任何物品 = 换方向（键盘 R 同效）；物品可在抽屉四周随手摆放，拖进抽屉时自动对齐格子。靠近能放下的空位时，会帮你挪一点、转个方向。带金色铆钉的物品被钉住，不能移动。</p>
   </section>
   <footer>
     全部物品收进抽屉即可通关，可以留空隙。物品随时能取回，钉住的物品不能移动。卡住了可点「💡 提示」。
@@ -68,9 +83,9 @@
     <p class="intro-tip">点任意处继续 · 戳物品它会动 · Esc 跳过</p>
   </div>
 </div>
-<script src="core.js?v=20261113"></script>
+<script src="core.js?v=20261115c"></script>
 <script src="solver.js"></script>
 <script src="art.js"></script>
-<script src="app.js?v=20261113c"></script>
+<script src="app.js?v=20261115c"></script>
 </body>
 </html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>底色方案 · 小满屉</title>
+<style>
+:root{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#eee}
+header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);padding:12px 22px;border-bottom:1px solid #ddd;color:#5b4f45}
+header h1{font-size:18px;margin:0}
+header p{font-size:12px;color:#8a7c6e;margin:4px 0 0}
+.opt{padding:34px 22px 40px;border-bottom:3px solid #fff}
+.opt-inner{max-width:900px;margin:auto}
+.tag{display:inline-block;font-size:11px;letter-spacing:2px;color:#fff;background:#8a7c6e;border-radius:20px;padding:3px 12px;margin-bottom:10px}
+.opt h2{font-size:22px;margin:0 0 6px;color:inherit}
+.opt .desc{font-size:13px;line-height:1.8;max-width:640px}
+.logo{font-size:clamp(30px,4.5vw,40px);font-weight:800;letter-spacing:1px;line-height:1.1;margin:18px 0 6px;color:#7c5a2e;
+  text-shadow:0 2px 0 rgba(255,248,225,.9),0 5px 14px rgba(133,96,44,.28)}
+@supports((-webkit-background-clip:text) or (background-clip:text)){
+  .logo{background:linear-gradient(160deg,#7c5a2e 0%,#b5854a 48%,#e3b761 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;
+    filter:drop-shadow(0 2px 0 rgba(255,248,225,.95)) drop-shadow(0 5px 14px rgba(133,96,44,.30))}
+}
+.status{font-size:13px;line-height:1.7}
+canvas{display:block;margin-top:14px;border-radius:8px}
+.note{font-size:11.5px;margin-top:10px;opacity:.75}
+
+/* —— 各方案底色（与正文一致的可直接搬回 style.css body） —— */
+.cur .opt-inner{color:#5b4f45}
+.cur{background:radial-gradient(1100px 480px at 50% -8%, rgba(255,244,214,.7), rgba(255,244,214,0) 62%),linear-gradient(180deg,#f7ecd3 0%,#f1dfbe 100%)}
+.cur .status{color:#6f6154}
+
+.a{background:radial-gradient(1100px 480px at 50% -8%, rgba(255,238,200,.55), rgba(255,238,205,0) 62%),repeating-linear-gradient(90deg, rgba(146,102,48,.045) 0 2px, rgba(255,255,255,0) 2px 110px),repeating-linear-gradient(0deg, rgba(146,102,48,.028) 0 1px, transparent 1px 6px),linear-gradient(180deg,#f2d9ab 0%,#e9cd9e 100%)}
+.a .opt-inner{color:#5b4a36}
+.a .status{color:#6b5a44}
+
+.b{background:radial-gradient(1100px 480px at 50% -8%, rgba(255,250,238,.8), rgba(255,250,238,0) 62%),linear-gradient(180deg,#f3ede2 0%,#e9dfd0 100%)}
+.b .opt-inner{color:#57504a}
+.b .status{color:#6e665e}
+
+.c{background:radial-gradient(1100px 480px at 50% -8%, rgba(244,248,238,.85), rgba(244,248,238,0) 62%),linear-gradient(180deg,#ecf0e8 0%,#dde5da 100%)}
+.c .opt-inner{color:#4f564d}
+.c .status{color:#5f685c}
+
+.d{background:radial-gradient(1100px 480px at 50% -8%, rgba(255,240,228,.7), rgba(255,240,228,0) 62%),linear-gradient(180deg,#f5e7da 0%,#eed6c3 100%)}
+.d .opt-inner{color:#5f4c42}
+.d .status{color:#715e50}
+
+.e{background:radial-gradient(1100px 480px at 50% -8%, rgba(255,214,150,.16), rgba(255,214,150,0) 62%),linear-gradient(180deg,#46382c 0%,#2e251d 100%)}
+.e .opt-inner{color:#e8dcc8}
+.e .status{color:#c9b89d}
+.e .tag{background:#c9a15f;color:#2e251d}
+.e canvas{background:rgba(255,240,210,.04)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎨 底色方案对比 · 小满屉</h1>
+  <p>每屏一个方案：真实凹槽 + 真实物品（订书机在槽内=已收纳，笔记本浮在桌面=未收纳）。最上面是当前方案做对照。看中哪个告诉我编号。</p>
+</header>
+<div id="list"></div>
+<script src="core.js"></script>
+<script src="art.js"></script>
+<script>
+var OPTS = [
+  { cls: 'cur', name: '当前方案 · 米黄', desc: '现状对照：暖米黄渐变。问题：偏黄偏平，看久了有点腻、略显「廉价塑料感」。' },
+  { cls: 'a', name: '方案 A · 原木书桌', desc: '蜂蜜色原木 + 极浅木纹（竖向细脉 + 横向微纹理）。最贴「桌面收纳」主题：凹槽像真的刻进木头里。风险：纹理如果太明显会抢戏，这里压得很淡。' },
+  { cls: 'b', name: '方案 B · 燕麦奶咖', desc: '去掉黄调的暖中性色（奶咖/燕麦色），最克制耐看，长时间玩不累眼；物品的木纹金描边在上面依然清楚。' },
+  { cls: 'c', name: '方案 C · 雾灰绿', desc: '冷调灰绿（鼠尾草色）。冷暖对比让暖色物品「跳」出来，气质最现代、最「独立游戏」；和金色高亮框是绝配。' },
+  { cls: 'd', name: '方案 D · 暖陶粉', desc: '带一点粉的陶土米色，温柔治愈，和「小满屉」的节气感呼应；比当前米黄更有性格。' },
+  { cls: 'e', name: '方案 E · 胡桃夜色', desc: '深色胡桃木 + 暖光。最有氛围感、物品最突出；但凹槽/描边/文字颜色都要另调一套深色版，工作量最大（约半天）。' }
+];
+function drawSample(canvas) {
+  var s = 34, pad = 6, dpr = window.devicePixelRatio || 1;
+  var W = 460, H = 150;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+  var c = canvas.getContext('2d'); c.scale(dpr, dpr);
+  // 凹槽（与 app.js drawDrawers 同款画法）：6x3
+  var cw = 6 * s, ch = 3 * s;
+  function rrect(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x + r, y);
+    c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+    c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  c.fillStyle = 'rgba(140,105,55,.10)';
+  rrect(c, pad, pad, cw, ch, 9); c.fill();
+  c.save(); rrect(c, pad, pad, cw, ch, 9); c.clip();
+  var gT = c.createLinearGradient(0, pad, 0, pad + 11);
+  gT.addColorStop(0, 'rgba(101,74,33,.20)'); gT.addColorStop(1, 'rgba(101,74,33,0)');
+  c.fillStyle = gT; c.fillRect(pad, pad, cw, 11);
+  var gL = c.createLinearGradient(pad, 0, pad + 9, 0);
+  gL.addColorStop(0, 'rgba(101,74,33,.12)'); gL.addColorStop(1, 'rgba(101,74,33,0)');
+  c.fillStyle = gL; c.fillRect(pad, pad, 9, ch);
+  var gB = c.createLinearGradient(0, pad + ch - 9, 0, pad + ch);
+  gB.addColorStop(0, 'rgba(255,248,224,0)'); gB.addColorStop(1, 'rgba(255,248,224,.5)');
+  c.fillStyle = gB; c.fillRect(pad, pad + ch - 9, cw, 9);
+  c.restore();
+  c.strokeStyle = 'rgba(122,92,48,.30)'; c.lineWidth = 1.5;
+  rrect(c, pad, pad, cw, ch, 9); c.stroke();
+  c.strokeStyle = 'rgba(122,92,48,.10)'; c.lineWidth = 1; // 淡网格
+  for (var gx = 1; gx < 6; gx++) { c.beginPath(); c.moveTo(pad + gx * s, pad); c.lineTo(pad + gx * s, pad + ch); c.stroke(); }
+  for (var gy = 1; gy < 3; gy++) { c.beginPath(); c.moveTo(pad, pad + gy * s); c.lineTo(pad + cw, pad + gy * s); c.stroke(); }
+  // 槽内物品：订书机（已收纳 = 平嵌无投影）
+  StationeryArt.drawPiece(c, 'stapler', 0, pad + 0 * s, pad + 0 * s, s);
+  StationeryArt.drawPiece(c, 'tape', 0, pad + 3 * s, pad + 0 * s, s);
+  // 桌面物品：笔记本（未收纳 = 浮起投影）
+  c.save();
+  c.shadowColor = 'rgba(96,66,28,.28)'; c.shadowBlur = 9; c.shadowOffsetY = 5;
+  StationeryArt.drawPiece(c, 'note', 90, 250, 18, s);
+  c.restore();
+  StationeryArt.drawPiece(c, 'pencil', 0, 262, 108, s);
+}
+var list = document.getElementById('list');
+OPTS.forEach(function (o) {
+  var sec = document.createElement('section');
+  sec.className = 'opt ' + o.cls;
+  sec.innerHTML = '<div class="opt-inner"><span class="tag">' + o.cls.toUpperCase() + '</span>' +
+    '<h2>' + o.name + '</h2><p class="desc">' + o.desc + '</p>' +
+    '<div class="logo">🌾 小满屉</div>' +
+    '<div class="status">不错，就这样放。—— 状态栏文字长这样</div>' +
+    '<canvas></canvas></div>';
+  list.appendChild(sec);
+  drawSample(sec.querySelector('canvas'));
+});
+</script>
+</body>
+</html>

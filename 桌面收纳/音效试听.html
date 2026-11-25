@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>音效试听 · 桌面收纳</title>
+<style>
+:root{font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#5b4f45}
+body{margin:0;background:linear-gradient(180deg,#f7ecd3,#f1dfbe);background-attachment:fixed}
+main{max-width:680px;margin:auto;padding:28px 22px 40px}
+h1{font-size:24px;margin:0 0 4px}
+.sub{color:#8a7c6e;font-size:13px;margin:0 0 18px}
+h2{font-size:15px;margin:26px 0 10px;color:#7c5a2e}
+.row{display:flex;flex-wrap:wrap;gap:9px}
+button{font:inherit;color:inherit;border:1px solid #dcc9a8;background:#fffdf8;border-radius:12px;padding:10px 16px;cursor:pointer}
+button:hover{border-color:#c9a15f}
+button.playing{background:#f6c453;border-color:#e0a93c;font-weight:700}
+.tip{font-size:11.5px;color:#a5947f;margin-top:24px;line-height:1.8}
+code{background:#fff9e9;border:1px solid #e8dcc0;border-radius:6px;padding:1px 6px;font-size:11px}
+</style>
+</head>
+<body>
+<main>
+  <h1>🎧 音效试听</h1>
+  <p class="sub">点按钮试听。看中哪个，把 app.js 顶部 <code>sfx.FILES</code> 里对应的文件名换掉即可。</p>
+  <h2>(a) 放进抽屉的落位音（当前默认：drop_001）</h2>
+  <div class="row" id="placeRow"></div>
+  <h2>(b) 通关胜利音（当前默认：confirmation_001）</h2>
+  <div class="row" id="winRow"></div>
+  <p class="tip">素材：Kenney Interface Sounds（CC0，免署名），共 14 枚候选存于本目录。放置音建议挑短促有弹性的（0.1–0.2s）；胜利音可以稍长稍亮。</p>
+</main>
+<script>
+var GROUPS = {
+  placeRow: ['drop_001', 'drop_002', 'drop_003', 'drop_004', 'pluck_001', 'pluck_002', 'select_001', 'select_002'],
+  winRow: ['confirmation_001', 'confirmation_002', 'confirmation_003', 'confirmation_004', 'bong_001', 'maximize_006']
+};
+Object.keys(GROUPS).forEach(function (gid) {
+  var row = document.getElementById(gid);
+  GROUPS[gid].forEach(function (name) {
+    var b = document.createElement('button');
+    b.textContent = name;
+    b.addEventListener('click', function () {
+      var a = new Audio('audio/' + name + '.wav');
+      b.classList.add('playing');
+      a.addEventListener('ended', function () { b.classList.remove('playing'); });
+      a.play();
+    });
+    row.appendChild(b);
+  });
+});
+</script>
+</body>
+</html>

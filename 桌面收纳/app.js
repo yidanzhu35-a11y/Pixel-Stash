@@ -12,9 +12,9 @@
   var hint = null, hintRaf = 0;               // 提示：{kind:'place'|'move',…} 高亮建议；{kind:'retry'|'reset'} 仅文字
   var tutorial = null, winTimer = 0;
   var dragRaf = 0, landing = null;
-  // 新道具登场（规划 §4 教学）：首次出现的物品逐张亮相，点按推进；介绍过的记入存档（seen），重开不再打扰
+  // 新物品全档只逐张介绍一次（首次展示时记 seen）；seen 重置后才会重新出现。
   var introSeq = null, introPulse = null, introRaf = 0;
-  var INTRO_CAP = 5;   // 一关最多介绍 5 款：正常关 ≤4 款，上限防跳关测试时刷屏
+  var hintCoachTimer = 0;
   var INTRO_REDUCE = false;
   try { INTRO_REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
   var WIN_PRAISES = ['你太棒了！', '你真是收纳大师！', '收得真漂亮！', '这也太整齐了！', '漂亮，全部归位！',
@@ -43,6 +43,62 @@
   function save(p) { try { localStorage.setItem(SAVE, JSON.stringify(p)); } catch (e) {} }
   function say(msg, err) { var s = $('status'); s.textContent = msg; s.classList.toggle('error', !!err); }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // —— 音效（audio/ 目录，素材：Kenney Interface Sounds，CC0）：WebAudio 播放；首次用户手势后自动解锁 ——
+  var sfx = (function () {
+    var ctx = null, buffers = {}, lastIdx = {}, playLog = [];
+    var FILES = { // 换候选音：改文件名即可（audio/ 里有多枚候选）；数组 = 每次随机挑一枚
+      place: 'audio/drop_001.wav',        // 物品放进抽屉
+      win: ['audio/confirmation_001.wav', 'audio/confirmation_002.wav', // 通关：四枚轮换，制造丰富性
+            'audio/confirmation_004.wav', 'audio/maximize_006.wav']
+    };
+    function ac() {
+      if (ctx === null) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        ctx = AC ? new AC() : false;
+      }
+      return ctx || null;
+    }
+    function load(name) {
+      var c = ac(); if (!c || buffers[name] || !FILES[name]) return;
+      buffers[name] = []; // 已解码的 buffer 逐个进来，不全也能播
+      [].concat(FILES[name]).forEach(function (url) {
+        fetch(url).then(function (r) { return r.arrayBuffer(); })
+          .then(function (ab) { return c.decodeAudioData(ab); })
+          .then(function (buf) { buffers[name].push(buf); })
+          .catch(function () {});
+      });
+    }
+    function unlock() { // 自动播放策略：首个手势后 resume（预载已在启动时静默进行）
+      var c = ac(); if (!c) return;
+      if (c.state === 'suspended') c.resume();
+    }
+    function play(name) {
+      var c = ac(); if (!c) return;
+      var list = buffers[name];
+      if (!list || !list.length) return; // 尚未解码完成就静默跳过，不阻塞游戏
+      if (c.state === 'suspended') c.resume();
+      var i = Math.floor(Math.random() * list.length);
+      if (list.length > 1 && i === lastIdx[name]) i = (i + 1) % list.length; // 避免连续重复同一枚
+      lastIdx[name] = i;
+      try {
+        var src = c.createBufferSource(); src.buffer = list[i];
+        var g = c.createGain(); g.gain.value = name === 'win' ? .9 : .55; // 放置音收敛、胜利音饱满
+        src.connect(g); g.connect(c.destination); src.start(0);
+        playLog.push({ name: name, i: i, t: performance.now() });
+      } catch (e) {}
+    }
+    Object.keys(FILES).forEach(load); // 启动即预载（decodeAudioData 不需要 running ctx）
+    document.addEventListener('pointerdown', unlock, { passive: true });
+    document.addEventListener('keydown', unlock);
+    return {
+      play: play, unlock: unlock,
+      get log() { return playLog; },
+      get state() { var c = ac(); return c ? c.state : 'unsupported'; },
+      buffered: function (n) { return (buffers[n] || []).length; },       // 已解码枚数
+      duration: function (n) { return (buffers[n] || []).map(function (b) { return +b.duration.toFixed(3); }); }
+    };
+  })();
   function nextPraise() {
     if (!praiseBag.length) {
       praiseBag = WIN_PRAISES.slice();
@@ -86,8 +142,8 @@
     $('tutorial').hidden = !active;
     $('tutorialShow').hidden = !tutorial || active;
     if (!active) return;
-    var titles = ['先把橡皮拖进抽屉', '点一下物品，换个方向', '放进去以后，也能重新调整', '把剩下的物品都收好', '操作学会了，全部收齐！'];
-    var texts = ['绿色圈出的是真实物品。按住它拖进格子，松手后右侧件数会增加。',
+    var titles = ['先把物品拖进抽屉', '点一下物品，换个方向', '放进去以后，也能重新调整', '把剩下的物品都收好', '操作学会了，全部收齐！'];
+    var texts = ['抽屉外都是没收纳好的物品。按住物品拖进抽屉，它就收纳好啦',
       '试试点一下笔记本。旋转能帮你利用空间；键盘也可以按 R。',
       '拖动抽屉里的一件物品换个位置，或拖回外面的桌面，再放进去。',
       '先安排大件，再用短条填缝。六件物品全部放入即可，最后会留下两格空位。',
@@ -129,6 +185,11 @@
     });
     c.stroke(); c.restore();
   }
+  function placementTarget(id, drawer, x, y) {
+    var p = game.piece(id), snap = game.snapPlacement(id, drawer, x, y);
+    return snap ? Object.assign({ valid: true }, snap) :
+      { drawer: drawer, x: Math.round(x), y: Math.round(y), rot: p.rot || 0, valid: false };
+  }
   function dragTarget(x, y, d) {
     var p = game.piece(d.id), rd = dimsOf(p), best = null, score = -1;
     geometries.forEach(function (g, i) {
@@ -140,9 +201,7 @@
       var ratio = overlap / (rd.w * rd.h * g.s * g.s);
       var inside = x >= left && x < right && y >= top && y < bottom;
       if (!inside && ratio < .5) return;
-      var fit = game.fitRemaining(d.id, i);
-      var pos = fit || { drawer: i, x: Math.round((x - left) / g.s - d.offset.x), y: Math.round((y - top) / g.s - d.offset.y), rot: p.rot || 0 };
-      pos.valid = !!fit || game.check(d.id, i, pos.x, pos.y).ok;
+      var pos = placementTarget(d.id, i, (x - left) / g.s - d.offset.x, (y - top) / g.s - d.offset.y);
       var priority = ratio + (inside ? 1 : 0);
       if (priority > score) { best = pos; score = priority; }
     });
@@ -156,11 +215,17 @@
     if (!drag || !drag.moved) return;
     var p = game.piece(drag.id), x = drag.clientX - drag.offset.x * desk.s, y = drag.clientY - drag.offset.y * desk.s;
     var rot = p.rot || 0;
+    // 自动旋转只改跟手图，不提前改变真实状态；围绕物品中心转向，并靠近预览位置。
+    if (hover && hover.valid && hover.rot !== rot) {
+      var before = dimsOf(p), after = core.rotatedDims(core.shapeOfItem(p.item), hover.rot);
+      x += (before.w - after.w) * desk.s / 2; y += (before.h - after.h) * desk.s / 2;
+      rot = hover.rot;
+    }
     // 物品持续跟手；仅在靠近合法格点时轻柔吸引，避免整段拖动逐格跳跃。
-    if (hover && hover.valid && hover.rot === rot) {
+    if (hover && hover.valid) {
       var g = geometries[hover.drawer], r = $('drawer-' + hover.drawer).getBoundingClientRect();
       var tx = r.left + g.pad + hover.x * g.s, ty = r.top + g.pad + hover.y * g.s;
-      var dx = tx - x, dy = ty - y, distance = Math.hypot(dx, dy), radius = g.s * .38;
+      var dx = tx - x, dy = ty - y, distance = Math.hypot(dx, dy), radius = g.s * (hover.assisted ? 1 : .38);
       var t = clamp(1 - distance / radius, 0, 1), strength = .7 * t * t * (3 - 2 * t);
       x += dx * strength; y += dy * strength;
     }
@@ -218,15 +283,52 @@
     p.x = best ? best.x : 0; p.y = best ? best.y : bottom + .5;
   }
 
+  // 放置失败的兜底：从桌面拖来却放不下时，把目标格换算成桌面坐标，
+  // 交给 settleOnDesk 找最近的不压抽屉/他件的空位——免得长途退回原位（2026-11-14 用户反馈）。
+  function settleNearDrawer(p, pos) {
+    var g = geometries[pos.drawer];
+    if (!g) return;
+    var dr = $('drawer-' + pos.drawer).getBoundingClientRect(), area = $('desk').getBoundingClientRect();
+    var rd = dimsOf(p);
+    game.bringTop(p.id);
+    p.x = clamp((dr.left + g.pad + pos.x * g.s - area.left - desk.pad) / desk.s, 0, Math.max(0, desk.w - rd.w));
+    p.y = Math.max(0, (dr.top + g.pad + pos.y * g.s - area.top - desk.pad) / desk.s);
+    settleOnDesk(p);
+  }
+
+  // 关卡分组主题（每 10 关一个主题）：选择器按行展示，玩家一眼 get 结构
+  var THEMES = [
+    { name: '开学文具盒', start: 0 },
+    { name: '随身百宝袋', start: 10 },
+    { name: '数码急救包', start: 20 },
+    { name: '晨间梳妆台', start: 30 },
+    { name: '深夜零食铺', start: 40 }
+  ];
   function refreshLevelOptions() {
     var p = progress();
-    $('level').innerHTML = LEVELS.map(function (l, i) {
-      var locked = i > p.unlocked - 1;
-      var label = sandboxLevel ? '🛠️ 试玩候选关（不存档）' : (i + 1) + '. ' + l.name;
-      return '<option value="' + i + '"' + (locked ? ' disabled' : '') + '>' +
-        label + (locked ? ' 🔒' : '') + (!sandboxLevel && p.done.indexOf(i) >= 0 ? ' ✓' : '') + '</option>';
+    if (sandboxLevel) { // 沙盒试玩：不写存档、不分行
+      $('levelBtn').textContent = '🛠️ 试玩候选关（不存档）';
+      $('levelPanel').innerHTML = '<div class="lp-row"><span class="lp-theme">🛠️ 试玩候选关，不存档</span></div>';
+      return;
+    }
+    var theme = THEMES[Math.min(THEMES.length - 1, Math.floor(index / 10))];
+    $('levelBtn').textContent = theme.name + ' · 第 ' + (index % 10 + 1) + ' 关 ▾';
+    $('levelPanel').innerHTML = THEMES.map(function (t) {
+      var nums = '';
+      for (var k = 0; k < 10; k++) {
+        var i = t.start + k;
+        if (i >= LEVELS.length) break;
+        var locked = i > p.unlocked - 1;
+        var cls = 'lp-num' + (locked ? ' locked' : '') + (i === index ? ' current' : '') + (!locked && p.done.indexOf(i) >= 0 ? ' done' : '');
+        nums += '<button type="button" class="' + cls + '" data-i="' + i + '"' + (locked ? ' disabled' : '') +
+          ' aria-label="第 ' + (i + 1) + ' 关' + (locked ? '（未解锁）' : '') + '">' + (k + 1) + '</button>';
+      }
+      return '<div class="lp-row"><span class="lp-theme">' + t.name + '</span><span class="lp-nums">' + nums + '</span></div>';
     }).join('');
-    $('level').value = String(index);
+  }
+  function levelPanelOpen(open) {
+    $('levelPanel').hidden = !open;
+    $('levelBtn').setAttribute('aria-expanded', String(open));
   }
 
   // —— 抽屉分行与格宽（§3.1 修订：多抽屉同屏，一行最多 9 格，超出换行）——
@@ -275,13 +377,15 @@
 
   function load(i) {
     clearTimeout(winTimer);
+    dismissHintCoach();
     cancelDragRender(); landing = null;
+    if (introSeq) cancelAnimationFrame(introSeq.raf);
     introSeq = null; introPulse = null; cancelAnimationFrame(introRaf); $('intro').hidden = true; // 登场序列不跨关残留
     index = i; game = new core.Game(LEVELS[i]);
     tutorial = i === 0 && !sandboxLevel ? {placed:false,rotated:false,adjusted:false,skipped:false} : null;
     selected = null; drag = null; hover = null; fx.shake = null; hint = null; cancelAnimationFrame(hintRaf); cursor = { drawer: 0, x: 0, y: 0 };
     lastRowKey = '';
-    $('level').value = String(i); $('win').hidden = true;
+    refreshLevelOptions(); $('win').hidden = true;
     $('frames').innerHTML = game.level.drawers.map(function (d, i) {
       return '<div class="drawer-card" id="drawer-card-' + i + '">' +
         '<div class="drawer-heading"><strong>抽屉 ' + (i + 1) + '</strong></div>' +
@@ -331,6 +435,7 @@
     say('物品摊在桌面上，拖进抽屉收纳；点一下物品换方向。');
     var fresh = freshItems(i);
     if (fresh.length) startIntro(fresh);
+    else showHintCoach();
   }
 
   function select(id) {
@@ -348,7 +453,10 @@
 
   function render() {
     var loose = game.loose();
-    $('progress').textContent = '已收好 ' + (game.pieces.length - loose.length) + ' / ' + game.pieces.length + ' 件';
+    $('progress').textContent = (game.pieces.length - loose.length) + ' / ' + game.pieces.length + ' 件';
+    var slack = game.slackCells();
+    $('slack').textContent = slack > 0 ? slack + ' 格' : '刚好装满';
+    $('slackLabel').textContent = slack > 0 ? '本关可留空' : '本关目标';
     renderTutorial();
     $('emptyStock').hidden = loose.length > 0;
     drawDrawers();
@@ -475,10 +583,8 @@
       }
       if (selected !== null && hover && hover.drawer === i) {
         var sp = game.piece(selected);
-        var fit = game.fitRemaining(sp.id, i);
-        var preview = fit || hover;
-        var previewRot = fit ? fit.rot : (sp.rot || 0);
-        var valid = !!fit || game.check(sp.id, i, hover.x, hover.y).ok;
+        var preview = hover.rot == null ? placementTarget(sp.id, i, hover.x, hover.y) : hover;
+        var previewRot = preview.rot, valid = preview.valid;
         c.save(); c.beginPath(); c.rect(pad, pad, d.w * s, d.h * s); c.clip();
         drawTarget(c, sp.item, previewRot, preview.x, preview.y, s, pad,
           valid ? '#65844d' : '#c45c48', valid ? 'rgba(110,145,75,.08)' : 'rgba(204,87,71,.20)');
@@ -604,22 +710,28 @@
     raf = requestAnimationFrame(step);
   }
   function place(id, pos) {
-    var p = game.piece(id), fit = game.fitRemaining(id, pos.drawer);
+    var p = game.piece(id);
     var fromDrawer = p.drawer;
     var oldRot = p.rot;
-    if (fit) { p.rot = fit.rot; pos = fit; }
-    var result = game.place(id, pos.drawer, pos.x, pos.y);
-    if (!result.ok) p.rot = oldRot;
+    if (pos.rot == null) pos = placementTarget(id, pos.drawer, pos.x, pos.y);
+    var result = game.place(id, pos.drawer, pos.x, pos.y, pos.rot);
     if (result.ok) {
       selected = null; hover = null;
       if (result.wasNoop) { render(); return; }
       landing = {id:id,t:performance.now()};
+      sfx.play('place'); // 落位爽感音
       if (tutorial) tutorial.placed = true;
       if (tutorial && fromDrawer !== null) tutorial.adjusted = true;
       render(); kickAnim(); checkHint();
       if (result.won) onWin();
-      else say(fit && fit.rot !== oldRot ? '自动转好方向，嵌进去了。' : pick(['放好了～继续收下一件。', '又收进一件，越来越整齐了。', '不错，就这样放。', '位置不错！']));
-    } else { render(); say(result.reason, true); }
+      else say(pos.rot !== oldRot ? '自动转好方向，嵌进去了。' : pick(['放好了～继续收下一件。', '又收进一件，越来越整齐了。', '不错，就这样放。', '位置不错！']));
+    } else {
+      if (fromDrawer === null) { // 桌面拖来的：落在目标抽屉旁边，不退回远处原位；抽屉里拖出的仍回原位
+        settleNearDrawer(p, pos);
+        say(result.reason + ' 先搁在抽屉边上了。', true);
+      } else say(result.reason, true);
+      render();
+    }
   }
   function deskDrop(d, cx, cy) { // 拖到桌面上：自由摆放（从抽屉回来也算一步取回）
     var p = game.piece(d.id);
@@ -651,6 +763,7 @@
     else say('转了个方向～');
   }
   function onWin() {
+    dismissHintCoach();
     say('全部 ' + game.pieces.length + ' 件都收好了！');
     var p = progress();
     if (p.done.indexOf(index) < 0) p.done.push(index);
@@ -670,19 +783,19 @@
       $('next').textContent = sandboxLevel ? '再玩一次 ↻'
                                            : index === LEVELS.length - 1 ? '回到第一关 ↻' : '下一关 →';
       $('win').hidden = false;
+      sfx.play('win'); // 胜利音随肯定语一起跳出
     }, 420);
   }
 
-  // —— 新道具登场（规划 §4 教学）：一关含首次出现的物品 → 暗化桌面逐张介绍。MDA：机制=序列卡片+seen 存档，
-  //    动态=玩家自己控制节奏（点按推进/戳物品把玩），美学=新鲜感与「先认识再收纳」的胜任感。简约三件套：大物品、名字、一句话。 ——
-  function freshItems(i) { // 本关首次登场的物品（pieces 优先、fixed 兜底；去重 + 截断；沙盒试玩不教学）
+  // 每件物品整个存档只介绍一次：首次展示时 markSeen，之后重进/重开/换关都不再重复（2026-11-15 用户需求）。
+  function freshItems(i) {
     if (sandboxLevel) return [];
     var seen = progress().seen || [], out = [];
     LEVELS[i].pieces.concat(LEVELS[i].fixed || []).forEach(function (pc) {
       var id = core.itemOf(pc);
       if (seen.indexOf(id) < 0 && out.indexOf(id) < 0) out.push(id);
     });
-    return out.slice(0, INTRO_CAP);
+    return out;
   }
   function markSeen(id) {
     var p = progress(); p.seen = p.seen || [];
@@ -799,6 +912,8 @@
     $('intro').hidden = true;
     cancelAnimationFrame(introSeq.raf);
     introSeq = null;
+    $('levelBtn').focus({ preventScroll: true });
+    showHintCoach();
     introPulse = { ids: game.loose().filter(function (p) { return shown.indexOf(p.item) >= 0; }).map(function (p) { return p.id; }),
                    t: performance.now() };
     if (!introPulse.ids.length) return;
@@ -813,12 +928,30 @@
     };
     introRaf = requestAnimationFrame(step);
   }
-  function introSkip() { // Esc：整个序列立即收起；未介绍的物品不记 seen（下次登场还会介绍）
+  function introSkip() { // Esc：整个序列立即收起；剩下的一并记 seen——跳过=不想看，不再重复打扰
     if (!introSeq) return;
+    introSeq.items.forEach(markSeen);
     $('intro').hidden = true;
     cancelAnimationFrame(introSeq.raf);
     introSeq = null; introPulse = null;
+    $('levelBtn').focus({ preventScroll: true });
+    showHintCoach();
     say('物品摊在桌面上，拖进抽屉收纳；点一下物品换方向。');
+  }
+
+  function dismissHintCoach() {
+    clearTimeout(hintCoachTimer); hintCoachTimer = 0;
+    $('hintCoach').hidden = true;
+    $('hint').classList.remove('hint-attention');
+    $('hint').removeAttribute('aria-describedby');
+  }
+  function showHintCoach() {
+    if (sandboxLevel || index !== 1 || introSeq || game.won()) return;
+    $('hintCoach').hidden = false;
+    $('hint').classList.add('hint-attention');
+    $('hint').setAttribute('aria-describedby', 'hintCoachText');
+    clearTimeout(hintCoachTimer);
+    hintCoachTimer = setTimeout(function () { $('hint').classList.remove('hint-attention'); hintCoachTimer = 0; }, 3600);
   }
 
   // —— 提示系统（规划 §4）：求解器根据当前布局生成；建议都属于至少一种完整解法；超时（节点预算 HINT_NODES 或 >1.2s）返回重试，与无解区分 ——
@@ -956,17 +1089,31 @@
       else if (e.key === 'Tab') { e.preventDefault(); $('introNext').focus(); }
       return;
     }
-    if (e.key === 'Escape') { selected = null; drag = null; hover = null; hint = null; cancelAnimationFrame(hintRaf); $('win').hidden = true; if (game) render(); }
+    if (e.key === 'Escape') { dismissHintCoach(); selected = null; drag = null; hover = null; hint = null; cancelAnimationFrame(hintRaf); $('win').hidden = true; if (game) render(); }
     if ((e.key === 'r' || e.key === 'R') && selected !== null && e.target.tagName !== 'SELECT') rotate(selected);
   });
   $('restart').addEventListener('click', function () { load(index); });
   $('tutorialSkip').addEventListener('click', function () { if (tutorial) { tutorial.skipped = true; render(); } });
   $('tutorialShow').addEventListener('click', function () { if (tutorial) { tutorial.skipped = false; render(); } });
   $('hint').addEventListener('click', function () { // 再点一次 = 收起提示
+    dismissHintCoach();
     if (hint) { hint = null; cancelAnimationFrame(hintRaf); render(); say('提示收起来了，再点一次可以重新拿。'); return; }
     showHint();
   });
-  $('level').addEventListener('change', function () { load(Number($('level').value)); });
+  $('hintCoachClose').addEventListener('click', dismissHintCoach);
+  $('levelBtn').addEventListener('click', function () { levelPanelOpen($('levelPanel').hidden); });
+  $('levelPanel').addEventListener('click', function (e) {
+    var b = e.target.closest('.lp-num');
+    if (!b || b.disabled) return;
+    levelPanelOpen(false);
+    load(Number(b.dataset.i));
+  });
+  document.addEventListener('pointerdown', function (e) { // 点面板外收起
+    if (!$('levelPanel').hidden && !e.target.closest('#levelpicker')) levelPanelOpen(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('levelPanel').hidden) { levelPanelOpen(false); $('levelBtn').focus(); }
+  });
   $('keep').addEventListener('click', function () { $('win').hidden = true; });
   $('next').addEventListener('click', function () { load((index + 1) % LEVELS.length); });
   // 登场卡交互：点任意处 = 认识这张（含按钮/回车）；点物品本身 = 戳一下让它摆动（不推进，纯把玩）
@@ -997,6 +1144,7 @@
     get hover() { return hover; },
     get hint() { return hint; },
     get tutorial() { return tutorial; },
+    sfx: sfx,
     get sandbox() { return sandboxLevel; },
     get intro() { return introSeq; },
     get introPulse() { return introPulse; },
